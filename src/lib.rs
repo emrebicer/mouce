@@ -1,4 +1,4 @@
-pub mod linux_x11;
+pub mod nix_x11;
 pub mod common;
 pub use common::new_mouse_manager;
 

@@ -1,3 +1,7 @@
+///
+/// This module contains the mouse action functions
+/// for the unix-like systems that use X11
+///
 use crate::common::MouseActions;
 use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
@@ -18,6 +22,7 @@ impl X11MouseManager {
             X11MouseManager { display, window }
         }
     }
+
 }
 
 impl MouseActions for X11MouseManager {
@@ -26,6 +31,29 @@ impl MouseActions for X11MouseManager {
             XWarpPointer(self.display, 0, self.window, 0, 0, 0, 0, x as i32, y as i32);
             XFlush(self.display);
         }
+    }
+
+    fn get_position(&self) -> (i32, i32) {
+        let mut x = 0;
+        let mut y = 0;
+        let mut void = 0;
+        let mut mask = 0;
+
+        unsafe {
+            XQueryPointer(
+                self.display,
+                self.window,
+                &mut void,
+                &mut void,
+                &mut x,
+                &mut y,
+                &mut x,
+                &mut y,
+                &mut mask,
+            );
+        }
+
+        return (x, y);
     }
 }
 
@@ -45,12 +73,23 @@ extern "C" {
         dest_y: c_int,
     ) -> c_int;
 
-        fn XFlush(display: *mut Display) -> c_int;
+    fn XFlush(display: *mut Display) -> c_int;
+    fn XQueryPointer(
+        display: *mut Display,
+        window: Window,
+        root_return: *mut Window,
+        child_return: *mut Window,
+        root_x_return: *mut c_int,
+        root_y_return: *mut c_int,
+        win_x_return: *mut c_int,
+        win_y_return: *mut c_int,
+        mask_return: *mut c_uint,
+    ) -> bool;
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{linux_x11::X11MouseManager, common::MouseActions};
+    use crate::{common::MouseActions, nix_x11::X11MouseManager};
     use std::{thread, time};
 
     #[test]
@@ -80,6 +119,28 @@ mod tests {
             manager.move_to(960, y);
             y += 1;
             thread::sleep(sleep_duration);
+        }
+    }
+
+    #[test]
+    fn x11_get_position() {
+        let manager = X11MouseManager::new();
+        let positions = vec![
+            (0, 0),
+            (100, 100),
+            (250, 250),
+            (325, 325),
+            (400, 100),
+            (100, 400),
+        ];
+
+        let mut x;
+        let mut y;
+        for position in positions.iter() {
+            manager.move_to(position.0, position.1);
+            (x, y) = manager.get_position();
+            assert_eq!(x, position.0 as i32);
+            assert_eq!(y, position.1 as i32);
         }
     }
 }

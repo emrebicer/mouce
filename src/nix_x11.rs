@@ -133,6 +133,7 @@ extern "C" {
     ) -> bool;
 }
 
+/// XTest function definitions
 #[link(name = "Xtst")]
 extern "C" {
     fn XTestFakeButtonEvent(
@@ -159,7 +160,7 @@ mod tests {
     #[ignore]
     fn x11_move_to_left_to_right() {
         let manager = X11MouseManager::new();
-        let sleep_duration = time::Duration::from_millis(5);
+        let sleep_duration = time::Duration::from_millis(1);
         let mut x = 0;
         while x < 1920 {
             manager.move_to(x, 540);
@@ -172,7 +173,7 @@ mod tests {
     #[ignore]
     fn x11_move_to_top_to_bottom() {
         let manager = X11MouseManager::new();
-        let sleep_duration = time::Duration::from_millis(5);
+        let sleep_duration = time::Duration::from_millis(1);
         let mut y = 0;
         while y < 1080 {
             manager.move_to(960, y);
@@ -216,7 +217,7 @@ mod tests {
     #[ignore]
     fn x11_scroll_down() {
         let manager = X11MouseManager::new();
-        loop {
+        for _ in 0..10 {
             manager.press_button(MouseButton::ScrollDown);
             manager.release_button(MouseButton::ScrollDown);
             let sleep_duration = time::Duration::from_millis(250);

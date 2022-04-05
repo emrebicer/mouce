@@ -19,7 +19,7 @@ impl X11MouseManager {
         }
     }
 
-    fn button_event(&self, button: MouseButton, is_press: bool) {
+    fn button_event(&self, button: &MouseButton, is_press: bool) {
         let btn = match button {
             MouseButton::LeftClick => 1,
             MouseButton::MiddleClick => 2,
@@ -65,12 +65,17 @@ impl MouseActions for X11MouseManager {
         return (x, y);
     }
 
-    fn press_button(&self, button: MouseButton) {
+    fn press_button(&self, button: &MouseButton) {
         self.button_event(button, true);
     }
 
-    fn release_button(&self, button: MouseButton) {
+    fn release_button(&self, button: &MouseButton) {
         self.button_event(button, false);
+    }
+
+    fn click_button(&self, button: &MouseButton) {
+        self.press_button(button);
+        self.release_button(button);
     }
 }
 
@@ -209,8 +214,7 @@ mod tests {
     #[ignore]
     fn x11_left_click() {
         let manager = X11MouseManager::new();
-        manager.press_button(MouseButton::LeftClick);
-        manager.release_button(MouseButton::LeftClick);
+        manager.click_button(&MouseButton::LeftClick);
     }
 
     #[test]
@@ -218,8 +222,7 @@ mod tests {
     fn x11_scroll_down() {
         let manager = X11MouseManager::new();
         for _ in 0..10 {
-            manager.press_button(MouseButton::ScrollDown);
-            manager.release_button(MouseButton::ScrollDown);
+            manager.click_button(&MouseButton::ScrollDown);
             let sleep_duration = time::Duration::from_millis(250);
             thread::sleep(sleep_duration);
         }

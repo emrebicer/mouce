@@ -12,7 +12,9 @@ pub trait MouseActions {
     /// Get the current position of the mouse
     fn get_position(&self) -> (i32, i32);
     /// Press down the given mouse button
-    fn press_button(&self, button: MouseButton);
+    fn press_button(&self, button: &MouseButton);
     /// Release the given mouse button
-    fn release_button(&self, button: MouseButton);
+    fn release_button(&self, button: &MouseButton);
+    /// Click the given mouse button
+    fn click_button(&self, button: &MouseButton);
 }

@@ -2,12 +2,8 @@
 /// This module contains the mouse action functions
 /// for the unix-like systems that use X11
 ///
-use crate::common::MouseActions;
+use crate::common::{MouseActions, MouseButton};
 use std::os::raw::{c_char, c_int, c_uint, c_ulong};
-
-pub enum _XDisplay {}
-pub type Display = _XDisplay;
-pub type Window = c_ulong;
 
 pub struct X11MouseManager {
     display: *mut Display,
@@ -23,6 +19,19 @@ impl X11MouseManager {
         }
     }
 
+    fn button_event(&self, button: MouseButton, is_press: bool) {
+        let btn = match button {
+            MouseButton::LeftClick => 1,
+            MouseButton::MiddleClick => 2,
+            MouseButton::RightClick => 3,
+            MouseButton::ScrollUp => 4,
+            MouseButton::ScrollDown => 5,
+        };
+        unsafe {
+            XTestFakeButtonEvent(self.display, btn, is_press, 0);
+            XFlush(self.display);
+        }
+    }
 }
 
 impl MouseActions for X11MouseManager {
@@ -55,8 +64,45 @@ impl MouseActions for X11MouseManager {
 
         return (x, y);
     }
+
+    fn press_button(&self, button: MouseButton) {
+        self.button_event(button, true);
+    }
+
+    fn release_button(&self, button: MouseButton) {
+        self.button_event(button, false);
+    }
 }
 
+/// Xlib type definitions
+enum _XDisplay {}
+type Display = _XDisplay;
+type Window = c_ulong;
+
+#[derive(Debug)]
+#[repr(C)]
+struct XEvent {
+    r#type: c_int,
+    xbutton: XButtonEvent,
+}
+
+#[derive(Debug)]
+#[repr(C)]
+struct XButtonEvent {
+    r#type: c_int,
+    window: Window,
+    root: Window,
+    subwindow: Window,
+    x: c_int,
+    y: c_int,
+    x_root: c_int,
+    y_root: c_int,
+    state: c_uint,
+    button: c_uint,
+    same_screen: bool,
+}
+
+/// Xlib function definitions
 #[link(name = "X11")]
 extern "C" {
     fn XOpenDisplay(display: *const c_char) -> *mut Display;
@@ -87,18 +133,30 @@ extern "C" {
     ) -> bool;
 }
 
+#[link(name = "Xtst")]
+extern "C" {
+    fn XTestFakeButtonEvent(
+        dpy: *mut Display,
+        button: c_uint,
+        is_press: bool,
+        delay: c_ulong,
+    ) -> c_int;
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{common::MouseActions, nix_x11::X11MouseManager};
+    use crate::{common::MouseActions, common::MouseButton, nix_x11::X11MouseManager};
     use std::{thread, time};
 
     #[test]
+    #[ignore]
     fn x11_move_to_right_bottom() {
         let manager = X11MouseManager::new();
         manager.move_to(1920, 1080);
     }
 
     #[test]
+    #[ignore]
     fn x11_move_to_left_to_right() {
         let manager = X11MouseManager::new();
         let sleep_duration = time::Duration::from_millis(5);
@@ -111,6 +169,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn x11_move_to_top_to_bottom() {
         let manager = X11MouseManager::new();
         let sleep_duration = time::Duration::from_millis(5);
@@ -123,6 +182,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn x11_get_position() {
         let manager = X11MouseManager::new();
         let positions = vec![
@@ -141,6 +201,26 @@ mod tests {
             (x, y) = manager.get_position();
             assert_eq!(x, position.0 as i32);
             assert_eq!(y, position.1 as i32);
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn x11_left_click() {
+        let manager = X11MouseManager::new();
+        manager.press_button(MouseButton::LeftClick);
+        manager.release_button(MouseButton::LeftClick);
+    }
+
+    #[test]
+    #[ignore]
+    fn x11_scroll_down() {
+        let manager = X11MouseManager::new();
+        loop {
+            manager.press_button(MouseButton::ScrollDown);
+            manager.release_button(MouseButton::ScrollDown);
+            let sleep_duration = time::Duration::from_millis(250);
+            thread::sleep(sleep_duration);
         }
     }
 }

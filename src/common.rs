@@ -2,8 +2,11 @@ pub enum MouseButton {
     LeftClick,
     MiddleClick,
     RightClick,
-    ScrollUp,
-    ScrollDown,
+}
+
+pub enum ScrollDirection {
+    Up,
+    Down,
 }
 
 pub trait MouseActions {
@@ -17,4 +20,6 @@ pub trait MouseActions {
     fn release_button(&self, button: &MouseButton);
     /// Click the given mouse button
     fn click_button(&self, button: &MouseButton);
+    /// Scroll the mouse wheel towards to the given direction
+    fn scroll_wheel(&self, direction: &ScrollDirection);
 }

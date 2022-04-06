@@ -83,8 +83,8 @@ impl MouseActions for DarwinMouseManager {
 
     fn scroll_wheel(&self, direction: &ScrollDirection) {
         let distance = match direction {
-            ScrollDirection::Up => -5,
-            ScrollDirection::Down => 5,
+            ScrollDirection::Up => 5,
+            ScrollDirection::Down => -5,
         };
         self.create_scroll_wheel_event(distance);
     }

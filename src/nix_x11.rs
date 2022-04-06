@@ -2,7 +2,7 @@
 /// This module contains the mouse action functions
 /// for the unix-like systems that use X11
 ///
-use crate::common::{MouseActions, MouseButton};
+use crate::common::{MouseActions, MouseButton, ScrollDirection};
 use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
 pub struct X11MouseManager {
@@ -24,8 +24,6 @@ impl X11MouseManager {
             MouseButton::LeftClick => 1,
             MouseButton::MiddleClick => 2,
             MouseButton::RightClick => 3,
-            MouseButton::ScrollUp => 4,
-            MouseButton::ScrollDown => 5,
         };
         unsafe {
             XTestFakeButtonEvent(self.display, btn, is_press, 0);
@@ -76,6 +74,18 @@ impl MouseActions for X11MouseManager {
     fn click_button(&self, button: &MouseButton) {
         self.press_button(button);
         self.release_button(button);
+    }
+
+    fn scroll_wheel(&self, direction: &ScrollDirection) {
+        let btn = match direction {
+            ScrollDirection::Up => 4,
+            ScrollDirection::Down => 5,
+        };
+        unsafe {
+            XTestFakeButtonEvent(self.display, btn, true, 0);
+            XTestFakeButtonEvent(self.display, btn, false, 0);
+            XFlush(self.display);
+        }
     }
 }
 
@@ -151,7 +161,10 @@ extern "C" {
 
 #[cfg(test)]
 mod tests {
-    use crate::{common::MouseActions, common::MouseButton, nix_x11::X11MouseManager};
+    use crate::{
+        common::MouseActions, common::MouseButton, common::ScrollDirection,
+        nix_x11::X11MouseManager,
+    };
     use std::{thread, time};
 
     #[test]
@@ -222,7 +235,7 @@ mod tests {
     fn x11_scroll_down() {
         let manager = X11MouseManager::new();
         for _ in 0..10 {
-            manager.click_button(&MouseButton::ScrollDown);
+            manager.scroll_wheel(&ScrollDirection::Down);
             let sleep_duration = time::Duration::from_millis(250);
             thread::sleep(sleep_duration);
         }

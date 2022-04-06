@@ -11,11 +11,11 @@ pub mod common;
 
 #[cfg(test)]
 mod tests {
-    use crate::{common::MouseActions, Mouse};
+    use crate::Mouse;
 
     #[test]
-    fn new_mouse_manager_test() {
-        let manager = Mouse::new();
-        manager.move_to(1920, 1080);
+    fn supported_platform() {
+        // Mouse should be visible if the current platform is supported
+        Mouse::new();
     }
 }

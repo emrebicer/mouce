@@ -6,6 +6,10 @@ pub use crate::nix_x11::X11MouseManager as Mouse;
 pub mod darwin;
 #[cfg(target_vendor = "apple")]
 pub use crate::darwin::DarwinMouseManager as Mouse;
+#[cfg(target_os = "windows")]
+pub mod windows;
+#[cfg(target_os = "windows")]
+pub use crate::windows::WindowsMouseManager as Mouse;
 
 pub mod common;
 

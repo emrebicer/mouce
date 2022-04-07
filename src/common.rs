@@ -1,7 +1,7 @@
 pub enum MouseButton {
-    LeftClick,
-    MiddleClick,
-    RightClick,
+    Left,
+    Middle,
+    Right,
 }
 
 pub enum ScrollDirection {
@@ -96,7 +96,7 @@ mod tests {
     #[ignore]
     fn left_click() {
         let manager = Mouse::new();
-        manager.click_button(&MouseButton::LeftClick);
+        manager.click_button(&MouseButton::Left);
     }
 
     #[test]

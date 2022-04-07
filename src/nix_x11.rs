@@ -21,9 +21,9 @@ impl X11MouseManager {
 
     fn button_event(&self, button: &MouseButton, is_press: bool) {
         let btn = match button {
-            MouseButton::LeftClick => 1,
-            MouseButton::MiddleClick => 2,
-            MouseButton::RightClick => 3,
+            MouseButton::Left => 1,
+            MouseButton::Middle => 2,
+            MouseButton::Right => 3,
         };
         unsafe {
             XTestFakeButtonEvent(self.display, btn, is_press, 0);

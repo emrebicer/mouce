@@ -60,18 +60,18 @@ impl MouseActions for DarwinMouseManager {
 
     fn press_button(&self, button: &MouseButton) {
         let (event_type, mouse_button) = match button {
-            MouseButton::LeftClick => (CGEventType::LeftMouseDown, CGMouseButton::Left),
-            MouseButton::MiddleClick => (CGEventType::OtherMouseDown, CGMouseButton::Center),
-            MouseButton::RightClick => (CGEventType::RightMouseDown, CGMouseButton::Right),
+            MouseButton::Left => (CGEventType::LeftMouseDown, CGMouseButton::Left),
+            MouseButton::Middle => (CGEventType::OtherMouseDown, CGMouseButton::Center),
+            MouseButton::Right => (CGEventType::RightMouseDown, CGMouseButton::Right),
         };
         self.create_mouse_event(event_type, mouse_button);
     }
 
     fn release_button(&self, button: &MouseButton) {
         let (event_type, mouse_button) = match button {
-            MouseButton::LeftClick => (CGEventType::LeftMouseUp, CGMouseButton::Left),
-            MouseButton::MiddleClick => (CGEventType::OtherMouseUp, CGMouseButton::Center),
-            MouseButton::RightClick => (CGEventType::RightMouseUp, CGMouseButton::Right),
+            MouseButton::Left => (CGEventType::LeftMouseUp, CGMouseButton::Left),
+            MouseButton::Middle => (CGEventType::OtherMouseUp, CGMouseButton::Center),
+            MouseButton::Right => (CGEventType::RightMouseUp, CGMouseButton::Right),
         };
         self.create_mouse_event(event_type, mouse_button);
     }

@@ -26,7 +26,7 @@ pub trait MouseActions {
 
 #[cfg(test)]
 mod tests {
-    use crate::{common::MouseActions, common::MouseButton, common::ScrollDirection, Mouse};
+    use crate::{common::MouseButton, common::ScrollDirection, Mouse};
     use std::{thread, time};
 
     #[test]

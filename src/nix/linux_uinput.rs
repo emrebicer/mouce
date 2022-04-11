@@ -1,6 +1,6 @@
 ///
 /// This module contains the mouse action functions
-/// for the linux systems, uses uinput
+/// for the linux systems that uses uinput
 ///
 use crate::common::{MouseActions, MouseButton, ScrollDirection};
 use std::ffi::CString;
@@ -19,14 +19,13 @@ impl LinuxUInputMouseManager {
     pub fn new() -> Self {
         let manager = LinuxUInputMouseManager {
             uinput_file: File::options()
-                //.read(true)
                 .write(true)
                 .open("/dev/uinput")
                 .expect("uinput file can not be opened"),
         };
         let fd = manager.uinput_file.as_raw_fd();
         unsafe {
-            // For press events
+            // For press events (also needed for mouse movement)
             ioctl(fd, UI_SET_EVBIT, EV_KEY);
             ioctl(fd, UI_SET_KEYBIT, BTN_LEFT);
 
@@ -56,9 +55,8 @@ impl LinuxUInputMouseManager {
         // On UI_DEV_CREATE the kernel will create the device node for this
         // device. We are inserting a pause here so that userspace has time
         // to detect, initialize the new device, and can start listening to
-        // the event, otherwise it will not notice the event we are about
-        // to send. This pause is only needed in our example code!
-        thread::sleep(Duration::from_millis(500));
+        // the event, otherwise it will not notice the event we are about to send.
+        thread::sleep(Duration::from_millis(300));
 
         manager
     }
@@ -92,10 +90,26 @@ impl LinuxUInputMouseManager {
     }
 }
 
+impl Drop for LinuxUInputMouseManager {
+    fn drop(&mut self) {
+        let fd = self.uinput_file.as_raw_fd();
+        unsafe {
+            // Destroy the device, the file is closed automatically by the File module
+            ioctl(fd, UI_DEV_DESTROY as u64);
+        }
+    }
+}
+
 impl MouseActions for LinuxUInputMouseManager {
     fn move_to(&self, x: usize, y: usize) {
         self.move_relative(i32::min_value(), i32::min_value());
-        self.move_relative(x as i32, y as i32);
+        // For some reason the uinput scales the `x` and `y` values by 2...
+        // To achieve the expected behavior; divide the parameters by 2
+        //
+        // This seems like there is a bug in this crate, but the 
+        // behavior is the same on other projects that make use of
+        // uinput. e.g. `ydotool`
+        self.move_relative(x as i32 / 2, y as i32 / 2);
     }
 
     fn get_position(&self) -> (i32, i32) {
@@ -125,6 +139,7 @@ const UI_SET_KEYBIT: c_ulong = 1074025829;
 const UI_SET_RELBIT: c_ulong = 1074025830;
 const UI_DEV_SETUP: c_ulong = 1079792899;
 const UI_DEV_CREATE: c_ulong = 21761;
+const UI_DEV_DESTROY: c_uint = 21762;
 
 const SYN_REPORT: c_int = 0x00;
 const EV_KEY: c_int = 0x01;
@@ -139,7 +154,6 @@ const BUS_USB: c_ushort = 0x03;
 #[repr(C)]
 struct UInputSetup {
     id: InputId,
-    //name: [c_char; UINPUT_MAX_NAME_SIZE],
     name: CString,
     ff_effects_max: c_ulong,
 }
@@ -171,9 +185,6 @@ extern "C" {
     fn write(fd: c_int, buf: *mut InputEvent, count: usize) -> usize;
 }
 
-//#[link(name = "input")]
-extern "C" {}
-
 #[cfg(test)]
 mod tests {
     use super::LinuxUInputMouseManager;
@@ -183,6 +194,6 @@ mod tests {
     fn uinput_move() {
         let manager = LinuxUInputMouseManager::new();
 
-        manager.move_to(1920/2, 1080/2);
+        manager.move_to(1920 / 2, 1080 / 2);
     }
 }

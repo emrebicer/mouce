@@ -15,13 +15,13 @@ use std::os::unix::prelude::AsRawFd;
 use std::thread;
 use std::time::Duration;
 
-pub struct LinuxUInputMouseManager {
+pub struct UInputMouseManager {
     uinput_file: File,
 }
 
-impl LinuxUInputMouseManager {
+impl UInputMouseManager {
     pub fn new() -> Self {
-        let manager = LinuxUInputMouseManager {
+        let manager = UInputMouseManager {
             uinput_file: File::options()
                 .write(true)
                 .open("/dev/uinput")
@@ -109,7 +109,7 @@ impl LinuxUInputMouseManager {
     }
 }
 
-impl Drop for LinuxUInputMouseManager {
+impl Drop for UInputMouseManager {
     fn drop(&mut self) {
         let fd = self.uinput_file.as_raw_fd();
         unsafe {
@@ -119,7 +119,7 @@ impl Drop for LinuxUInputMouseManager {
     }
 }
 
-impl MouseActions for LinuxUInputMouseManager {
+impl MouseActions for UInputMouseManager {
     fn move_to(&self, x: usize, y: usize) {
         // For some reason, absolute mouse move events are not working on uinput
         // (as I understand those events are intended for touch events)

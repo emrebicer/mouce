@@ -2,6 +2,10 @@
 /// This module contains the mouse action functions
 /// for the linux systems that uses uinput
 ///
+/// - Unsupported mouse actions
+///     - get_position is not available on uinput
+///     - MouseButton::Middle press and release does not work
+///
 use crate::common::{MouseActions, MouseButton, ScrollDirection};
 use std::ffi::CString;
 use std::fs::File;
@@ -28,11 +32,14 @@ impl LinuxUInputMouseManager {
             // For press events (also needed for mouse movement)
             ioctl(fd, UI_SET_EVBIT, EV_KEY);
             ioctl(fd, UI_SET_KEYBIT, BTN_LEFT);
+            ioctl(fd, UI_SET_KEYBIT, BTN_RIGHT);
+            ioctl(fd, UI_SET_KEYBIT, BTN_MIDDLE);
 
             // For mouse movement
             ioctl(fd, UI_SET_EVBIT, EV_REL);
             ioctl(fd, UI_SET_RELBIT, REL_X);
             ioctl(fd, UI_SET_RELBIT, REL_Y);
+            ioctl(fd, UI_SET_RELBIT, REL_WHEEL);
         }
 
         let usetup = UInputSetup {
@@ -61,6 +68,7 @@ impl LinuxUInputMouseManager {
         manager
     }
 
+    /// Write the given event to the uinput file
     fn emit(&self, r#type: c_int, code: c_int, value: c_int) {
         let mut event = InputEvent {
             time: TimeVal {
@@ -83,6 +91,7 @@ impl LinuxUInputMouseManager {
         self.emit(EV_SYN, SYN_REPORT, 0);
     }
 
+    /// Move the mouse relative to the current position
     fn move_relative(&self, x: i32, y: i32) {
         // uinput does not move the mouse in pixels but uses `units`. I couldn't
         // find information regarding to this uinput `unit`, but according to
@@ -90,7 +99,7 @@ impl LinuxUInputMouseManager {
         //
         // To achieve the expected behavior; divide the parameters by 2
         //
-        // This seems like there is a bug in this crate, but the 
+        // This seems like there is a bug in this crate, but the
         // behavior is the same on other projects that make use of
         // uinput. e.g. `ydotool`. When you try to move your mouse,
         // it will move 2x further pixels
@@ -112,7 +121,8 @@ impl Drop for LinuxUInputMouseManager {
 
 impl MouseActions for LinuxUInputMouseManager {
     fn move_to(&self, x: usize, y: usize) {
-        // For some reason absolute mouse move events are not working on uinput
+        // For some reason, absolute mouse move events are not working on uinput
+        // (as I understand those events are intended for touch events)
         //
         // As a work around solution; first set the mouse to top left, then
         // call relative move function to simulate an absolute move event
@@ -121,23 +131,42 @@ impl MouseActions for LinuxUInputMouseManager {
     }
 
     fn get_position(&self) -> (i32, i32) {
+        // uinput does not let us get the current position of the mouse
         unimplemented!();
     }
 
     fn press_button(&self, button: &MouseButton) {
-        unimplemented!();
+        let btn = match button {
+            MouseButton::Left => BTN_LEFT,
+            MouseButton::Right => BTN_RIGHT,
+            MouseButton::Middle => BTN_MIDDLE,
+        };
+        self.emit(EV_KEY, btn, 1);
+        self.syncronize();
     }
 
     fn release_button(&self, button: &MouseButton) {
-        unimplemented!();
+        let btn = match button {
+            MouseButton::Left => BTN_LEFT,
+            MouseButton::Right => BTN_RIGHT,
+            MouseButton::Middle => BTN_MIDDLE,
+        };
+        self.emit(EV_KEY, btn, 0);
+        self.syncronize();
     }
 
     fn click_button(&self, button: &MouseButton) {
-        unimplemented!();
+        self.press_button(&button);
+        self.release_button(&button);
     }
 
     fn scroll_wheel(&self, direction: &ScrollDirection) {
-        unimplemented!();
+        let scroll_value = match direction {
+            ScrollDirection::Up => 1,
+            ScrollDirection::Down => -1,
+        };
+        self.emit(EV_REL, REL_WHEEL as i32, scroll_value);
+        self.syncronize();
     }
 }
 
@@ -155,7 +184,10 @@ const EV_SYN: c_int = 0x00;
 const EV_REL: c_int = 0x02;
 const REL_X: c_uint = 0x00;
 const REL_Y: c_uint = 0x01;
+const REL_WHEEL: c_uint = 0x08;
 const BTN_LEFT: c_int = 0x110;
+const BTN_RIGHT: c_int = 0x111;
+const BTN_MIDDLE: c_int = 0x112;
 const BUS_USB: c_ushort = 0x03;
 
 /// uinput types
@@ -191,17 +223,4 @@ struct TimeVal {
 extern "C" {
     fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
     fn write(fd: c_int, buf: *mut InputEvent, count: usize) -> usize;
-}
-
-#[cfg(test)]
-mod tests {
-    use super::LinuxUInputMouseManager;
-    use crate::common::MouseActions;
-
-    #[test]
-    fn uinput_move() {
-        let manager = LinuxUInputMouseManager::new();
-
-        manager.move_to(1920 / 2, 1080 / 2);
-    }
 }

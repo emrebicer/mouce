@@ -84,8 +84,18 @@ impl LinuxUInputMouseManager {
     }
 
     fn move_relative(&self, x: i32, y: i32) {
-        self.emit(EV_REL, REL_X as i32, x);
-        self.emit(EV_REL, REL_Y as i32, y);
+        // uinput does not move the mouse in pixels but uses `units`. I couldn't
+        // find information regarding to this uinput `unit`, but according to
+        // my findings 1 unit corresponds to exactly 2 pixels.
+        //
+        // To achieve the expected behavior; divide the parameters by 2
+        //
+        // This seems like there is a bug in this crate, but the 
+        // behavior is the same on other projects that make use of
+        // uinput. e.g. `ydotool`. When you try to move your mouse,
+        // it will move 2x further pixels
+        self.emit(EV_REL, REL_X as i32, x / 2);
+        self.emit(EV_REL, REL_Y as i32, y / 2);
         self.syncronize();
     }
 }
@@ -102,14 +112,12 @@ impl Drop for LinuxUInputMouseManager {
 
 impl MouseActions for LinuxUInputMouseManager {
     fn move_to(&self, x: usize, y: usize) {
-        self.move_relative(i32::min_value(), i32::min_value());
-        // For some reason the uinput scales the `x` and `y` values by 2...
-        // To achieve the expected behavior; divide the parameters by 2
+        // For some reason absolute mouse move events are not working on uinput
         //
-        // This seems like there is a bug in this crate, but the 
-        // behavior is the same on other projects that make use of
-        // uinput. e.g. `ydotool`
-        self.move_relative(x as i32 / 2, y as i32 / 2);
+        // As a work around solution; first set the mouse to top left, then
+        // call relative move function to simulate an absolute move event
+        self.move_relative(i32::min_value(), i32::min_value());
+        self.move_relative(x as i32, y as i32);
     }
 
     fn get_position(&self) -> (i32, i32) {

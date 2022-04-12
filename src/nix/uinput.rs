@@ -50,7 +50,7 @@ impl UInputMouseManager {
                 product: 0x3333,
                 version: 0,
             },
-            name: CString::new("mice-library-fake-mouse").unwrap(),
+            name: CString::new("mouce-library-fake-mouse").unwrap(),
             ff_effects_max: 0,
         };
 

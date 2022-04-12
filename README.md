@@ -1,5 +1,5 @@
-# mice
-Mice is a library written in Rust that aims to help simulating mouse actions across different platforms.
+# mouce
+Mouce is a library written in Rust that aims to help simulating mouse actions across different platforms.
 ## Supported platforms
 - **Windows** ✅
   - Tested on Windows 10
@@ -38,7 +38,7 @@ This example program moves the mouse from left to right;
 use std::thread;
 use std::time::Duration;
 
-use mice::Mouse;
+use mouce::Mouse;
 
 fn main() {
     let mouse_manager = Mouse::new();

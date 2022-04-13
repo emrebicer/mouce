@@ -1,6 +1,6 @@
 [package]
 name = "mouce"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["Emre Bicer <oebicer@gmail.com>"]
 license = "MIT"
@@ -11,8 +11,13 @@ readme = "README.md"
 keywords = ["mouse", "movement", "click", "scroll", "events"]
 categories = ["accessibility", "command-line-utilities"]
 
+[profile.release]
+# Enable debug assertions, otherwise uinput module
+# does not work properly on release mode
+debug-assertions = true
+
 [features]
-build-binary = ["clap"]
+cli = ["clap"]
 
 [lib]
 name = "mouce"
@@ -21,7 +26,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "mouce"
 path = "src/bin/main.rs"
-required-features = ["build-binary"]
+required-features = ["cli"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

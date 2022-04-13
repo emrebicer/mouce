@@ -4,7 +4,6 @@
 ///
 /// - Unsupported mouse actions
 ///     - get_position is not available on uinput
-///     - MouseButton::Middle press and release does not work
 ///
 use crate::common::{MouseActions, MouseButton, ScrollDirection};
 use std::ffi::CString;
@@ -127,6 +126,10 @@ impl MouseActions for UInputMouseManager {
         // As a work around solution; first set the mouse to top left, then
         // call relative move function to simulate an absolute move event
         self.move_relative(i32::min_value(), i32::min_value());
+        // Give uinput some time to update the mouse location,
+        // otherwise it fails to move the mouse on release mode
+        // A delay of 1 milliseconds seems to be enough for it
+        thread::sleep(Duration::from_millis(1));
         self.move_relative(x as i32, y as i32);
     }
 

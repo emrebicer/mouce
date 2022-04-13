@@ -1,4 +1,4 @@
-#[cfg(feature = "build-binary")]
+#[cfg(feature = "cli")]
 use clap::{Arg, Command};
 use mouce;
 

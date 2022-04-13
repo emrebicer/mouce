@@ -51,3 +51,10 @@ fn main() {
     }
 }
 ```
+## CLI binary
+mouce comes with an example CLI program that uses mouce library functions.
+You can install the binary with;
+```terminal
+cargo install mouce
+```
+and see ```mouce --help``` for further details.

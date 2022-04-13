@@ -55,6 +55,6 @@ fn main() {
 mouce comes with an example CLI program that uses mouce library functions.
 You can install the binary with;
 ```terminal
-cargo install mouce
+cargo install mouce --features="build-binary"
 ```
 and see ```mouce --help``` for further details.

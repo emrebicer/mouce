@@ -9,7 +9,7 @@ homepage = "https://github.com/emrebicer/mouce"
 repository = "https://github.com/emrebicer/mouce"
 readme = "README.md"
 keywords = ["mouse", "movement", "click", "scroll", "events"]
-categories = ["accessibility, command-line-utilities"]
+categories = ["accessibility", "command-line-utilities"]
 
 [features]
 build-binary = ["clap"]

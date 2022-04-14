@@ -6,6 +6,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .about("A CLI tool that simulates mouse actions using the mouce library")
         .author("Emre Bicer")
         .arg_required_else_help(true)
+        .version(env!("CARGO_PKG_VERSION"))
         .subcommand(
             Command::new("move_to")
                 .about("Moves the mouse to the given position")

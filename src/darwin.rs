@@ -91,7 +91,21 @@ impl MouseActions for DarwinMouseManager {
 }
 
 /// CoreGraphics type definitions
-enum CGError {}
+#[allow(dead_code)]
+#[repr(C)]
+enum CGError {
+    CannotComplete = 1004,
+    Failure = 1000,
+    IllegalArgument = 1001,
+    InvalidConnection = 1002,
+    InvalidContext = 1003,
+    InvalidOperation = 1010,
+    NoneAvailable = 1011,
+    NotImplemented = 1006,
+    RangeCheck = 1007,
+    Success = 0,
+    TypeCheck = 1008,
+}
 #[repr(C)]
 pub struct CGPoint {
     x: c_double,

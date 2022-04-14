@@ -10,8 +10,8 @@ use std::os::raw::{c_int, c_long, c_uint, c_ulong};
 pub struct WindowsMouseManager {}
 
 impl WindowsMouseManager {
-    pub fn new() -> Self {
-        WindowsMouseManager {}
+    pub fn new() -> Box<dyn MouseActions> {
+        Box::new(WindowsMouseManager {})
     }
 
     fn send_input(&self, event: MouseEvent, mouse_data: i32) {

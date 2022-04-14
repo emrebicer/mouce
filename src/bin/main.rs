@@ -1,6 +1,5 @@
 #[cfg(feature = "cli")]
 use clap::{Arg, Command};
-use mouce;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Command::new("mouce")

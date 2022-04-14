@@ -10,8 +10,8 @@ use std::ptr::null_mut;
 pub struct DarwinMouseManager {}
 
 impl DarwinMouseManager {
-    pub fn new() -> Self {
-        DarwinMouseManager {}
+    pub fn new() -> Box<dyn MouseActions> {
+        Box::new(DarwinMouseManager {})
     }
 
     fn create_mouse_event(&self, event_type: CGEventType, mouse_button: CGMouseButton) {

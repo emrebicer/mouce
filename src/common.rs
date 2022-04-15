@@ -1,3 +1,5 @@
+use crate::error::Error;
+
 pub enum MouseButton {
     Left,
     Middle,
@@ -11,17 +13,17 @@ pub enum ScrollDirection {
 
 pub trait MouseActions {
     /// Move the mouse to the given `x`, `y` coordinates
-    fn move_to(&self, x: usize, y: usize);
+    fn move_to(&self, x: usize, y: usize) -> Result<(), Error>;
     /// Get the current position of the mouse
-    fn get_position(&self) -> (i32, i32);
+    fn get_position(&self) -> Result<(i32, i32), Error>;
     /// Press down the given mouse button
-    fn press_button(&self, button: &MouseButton);
+    fn press_button(&self, button: &MouseButton) -> Result<(), Error>;
     /// Release the given mouse button
-    fn release_button(&self, button: &MouseButton);
+    fn release_button(&self, button: &MouseButton) -> Result<(), Error>;
     /// Click the given mouse button
-    fn click_button(&self, button: &MouseButton);
+    fn click_button(&self, button: &MouseButton) -> Result<(), Error>;
     /// Scroll the mouse wheel towards to the given direction
-    fn scroll_wheel(&self, direction: &ScrollDirection);
+    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error>;
 }
 
 #[cfg(test)]
@@ -33,14 +35,14 @@ mod tests {
     #[ignore]
     fn move_to_right_bottom() {
         let manager = Mouse::new();
-        manager.move_to(1920, 1080);
+        assert_eq!(manager.move_to(1920, 1080), Ok(()));
     }
 
     #[test]
     #[ignore]
     fn move_to_top_left() {
         let manager = Mouse::new();
-        manager.move_to(0, 0);
+        assert_eq!(manager.move_to(0, 0), Ok(()));
     }
 
     #[test]
@@ -50,7 +52,7 @@ mod tests {
         let sleep_duration = time::Duration::from_millis(1);
         let mut x = 0;
         while x < 1920 {
-            manager.move_to(x, 540);
+            assert_eq!(manager.move_to(x, 540), Ok(()));
             x += 1;
             thread::sleep(sleep_duration);
         }
@@ -63,7 +65,7 @@ mod tests {
         let sleep_duration = time::Duration::from_millis(1);
         let mut y = 0;
         while y < 1080 {
-            manager.move_to(960, y);
+            assert_eq!(manager.move_to(960, y), Ok(()));
             y += 1;
             thread::sleep(sleep_duration);
         }
@@ -85,8 +87,8 @@ mod tests {
         let mut x;
         let mut y;
         for position in positions.iter() {
-            manager.move_to(position.0, position.1);
-            (x, y) = manager.get_position();
+            assert_eq!(manager.move_to(position.0, position.1), Ok(()));
+            (x, y) = manager.get_position().unwrap();
             assert_eq!(x, position.0 as i32);
             assert_eq!(y, position.1 as i32);
         }
@@ -96,7 +98,7 @@ mod tests {
     #[ignore]
     fn left_click() {
         let manager = Mouse::new();
-        manager.click_button(&MouseButton::Left);
+        assert_eq!(manager.click_button(&MouseButton::Left), Ok(()));
     }
 
     #[test]
@@ -104,7 +106,7 @@ mod tests {
     fn scroll_down() {
         let manager = Mouse::new();
         for _ in 0..10 {
-            manager.scroll_wheel(&ScrollDirection::Down);
+            assert_eq!(manager.scroll_wheel(&ScrollDirection::Down), Ok(()));
             let sleep_duration = time::Duration::from_millis(250);
             thread::sleep(sleep_duration);
         }
@@ -115,7 +117,7 @@ mod tests {
     fn scroll_up() {
         let manager = Mouse::new();
         for _ in 0..10 {
-            manager.scroll_wheel(&ScrollDirection::Up);
+            assert_eq!(manager.scroll_wheel(&ScrollDirection::Up), Ok(()));
             let sleep_duration = time::Duration::from_millis(250);
             thread::sleep(sleep_duration);
         }

@@ -6,10 +6,11 @@
 ///     - get_position is not available on uinput
 ///
 use crate::common::{MouseActions, MouseButton, ScrollDirection};
+use crate::error::Error;
 use std::ffi::CString;
 use std::fs::File;
 use std::mem::size_of;
-use std::os::raw::{c_int, c_uint, c_ulong, c_ushort};
+use std::os::raw::{c_int, c_long, c_uint, c_ulong, c_ushort};
 use std::os::unix::prelude::AsRawFd;
 use std::thread;
 use std::time::Duration;
@@ -68,7 +69,7 @@ impl UInputMouseManager {
     }
 
     /// Write the given event to the uinput file
-    fn emit(&self, r#type: c_int, code: c_int, value: c_int) {
+    fn emit(&self, r#type: c_int, code: c_int, value: c_int) -> Result<(), Error> {
         let mut event = InputEvent {
             time: TimeVal {
                 tv_sec: 0,
@@ -81,17 +82,25 @@ impl UInputMouseManager {
         let fd = self.uinput_file.as_raw_fd();
 
         unsafe {
-            write(fd, &mut event, size_of::<InputEvent>());
+            let count = size_of::<InputEvent>();
+            let written_bytes = write(fd, &mut event, count);
+            if written_bytes == -1 {
+                return Err(Error::WriteFailed);
+            } else if written_bytes != count as c_long {
+                return Err(Error::WriteFailed);
+            }
         }
+
+        Ok(())
     }
 
     /// Syncronize the device
-    fn syncronize(&self) {
-        self.emit(EV_SYN, SYN_REPORT, 0);
+    fn syncronize(&self) -> Result<(), Error> {
+        self.emit(EV_SYN, SYN_REPORT, 0)
     }
 
     /// Move the mouse relative to the current position
-    fn move_relative(&self, x: i32, y: i32) {
+    fn move_relative(&self, x: i32, y: i32) -> Result<(), Error> {
         // uinput does not move the mouse in pixels but uses `units`. I couldn't
         // find information regarding to this uinput `unit`, but according to
         // my findings 1 unit corresponds to exactly 2 pixels.
@@ -102,9 +111,9 @@ impl UInputMouseManager {
         // behavior is the same on other projects that make use of
         // uinput. e.g. `ydotool`. When you try to move your mouse,
         // it will move 2x further pixels
-        self.emit(EV_REL, REL_X as i32, x / 2);
-        self.emit(EV_REL, REL_Y as i32, y / 2);
-        self.syncronize();
+        self.emit(EV_REL, REL_X as i32, x / 2)?;
+        self.emit(EV_REL, REL_Y as i32, y / 2)?;
+        self.syncronize()
     }
 }
 
@@ -119,57 +128,57 @@ impl Drop for UInputMouseManager {
 }
 
 impl MouseActions for UInputMouseManager {
-    fn move_to(&self, x: usize, y: usize) {
+    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
         // For some reason, absolute mouse move events are not working on uinput
         // (as I understand those events are intended for touch events)
         //
         // As a work around solution; first set the mouse to top left, then
         // call relative move function to simulate an absolute move event
-        self.move_relative(i32::min_value(), i32::min_value());
+        self.move_relative(i32::min_value(), i32::min_value())?;
         // Give uinput some time to update the mouse location,
         // otherwise it fails to move the mouse on release mode
         // A delay of 1 milliseconds seems to be enough for it
         thread::sleep(Duration::from_millis(1));
-        self.move_relative(x as i32, y as i32);
+        self.move_relative(x as i32, y as i32)
     }
 
-    fn get_position(&self) -> (i32, i32) {
+    fn get_position(&self) -> Result<(i32, i32), Error> {
         // uinput does not let us get the current position of the mouse
-        unimplemented!();
+        Err(Error::NotImplemented)
     }
 
-    fn press_button(&self, button: &MouseButton) {
+    fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
         let btn = match button {
             MouseButton::Left => BTN_LEFT,
             MouseButton::Right => BTN_RIGHT,
             MouseButton::Middle => BTN_MIDDLE,
         };
-        self.emit(EV_KEY, btn, 1);
-        self.syncronize();
+        self.emit(EV_KEY, btn, 1)?;
+        self.syncronize()
     }
 
-    fn release_button(&self, button: &MouseButton) {
+    fn release_button(&self, button: &MouseButton) -> Result<(), Error> {
         let btn = match button {
             MouseButton::Left => BTN_LEFT,
             MouseButton::Right => BTN_RIGHT,
             MouseButton::Middle => BTN_MIDDLE,
         };
-        self.emit(EV_KEY, btn, 0);
-        self.syncronize();
+        self.emit(EV_KEY, btn, 0)?;
+        self.syncronize()
     }
 
-    fn click_button(&self, button: &MouseButton) {
-        self.press_button(&button);
-        self.release_button(&button);
+    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
+        self.press_button(&button)?;
+        self.release_button(&button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection) {
+    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
         let scroll_value = match direction {
             ScrollDirection::Up => 1,
             ScrollDirection::Down => -1,
         };
-        self.emit(EV_REL, REL_WHEEL as i32, scroll_value);
-        self.syncronize();
+        self.emit(EV_REL, REL_WHEEL as i32, scroll_value)?;
+        self.syncronize()
     }
 }
 
@@ -225,5 +234,5 @@ struct TimeVal {
 
 extern "C" {
     fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
-    fn write(fd: c_int, buf: *mut InputEvent, count: usize) -> usize;
+    fn write(fd: c_int, buf: *mut InputEvent, count: usize) -> c_long;
 }

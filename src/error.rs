@@ -5,6 +5,8 @@ pub enum Error {
     NotImplemented,
     WriteFailed,
     X11PointerWindowMismatch,
+    InputIsBlocked,
+    CustomError(&'static str),
 }
 
 impl std::error::Error for Error {}
@@ -17,6 +19,10 @@ impl fmt::Display for Error {
             Error::X11PointerWindowMismatch => {
                 "the pointer is not on the same screen as the specified window"
             }
+            Error::InputIsBlocked => {
+                "failed to send input, the input was already blocked by another thread"
+            }
+            Error::CustomError(err_description) => err_description,
         };
 
         write!(f, "{}", err_message)

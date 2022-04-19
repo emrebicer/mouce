@@ -19,17 +19,17 @@ Mouce is a library written in Rust that aims to help simulating mouse actions ac
 ## Library interface
 ```Rust
 /// Move the mouse to the given `x`, `y` coordinates
-fn move_to(&self, x: usize, y: usize);
+fn move_to(&self, x: usize, y: usize) -> Result<(), Error>;
 /// Get the current position of the mouse
-fn get_position(&self) -> (i32, i32);
+fn get_position(&self) -> Result<(i32, i32), Error>;
 /// Press down the given mouse button
-fn press_button(&self, button: &MouseButton);
+fn press_button(&self, button: &MouseButton) -> Result<(), Error>;
 /// Release the given mouse button
-fn release_button(&self, button: &MouseButton);
+fn release_button(&self, button: &MouseButton) -> Result<(), Error>;
 /// Click the given mouse button
-fn click_button(&self, button: &MouseButton);
+fn click_button(&self, button: &MouseButton) -> Result<(), Error>;
 /// Scroll the mouse wheel towards to the given direction
-fn scroll_wheel(&self, direction: &ScrollDirection);
+fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error>;
 ```
 ## Example
 This example program moves the mouse from left to right;

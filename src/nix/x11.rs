@@ -3,6 +3,7 @@
 /// for the unix-like systems that use X11
 ///
 use crate::common::{MouseActions, MouseButton, ScrollDirection};
+use crate::error::Error;
 use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
 pub struct X11MouseManager {
@@ -19,7 +20,7 @@ impl X11MouseManager {
         }
     }
 
-    fn button_event(&self, button: &MouseButton, is_press: bool) {
+    fn button_event(&self, button: &MouseButton, is_press: bool) -> Result<(), Error> {
         let btn = match button {
             MouseButton::Left => 1,
             MouseButton::Middle => 2,
@@ -29,25 +30,27 @@ impl X11MouseManager {
             XTestFakeButtonEvent(self.display, btn, is_press, 0);
             XFlush(self.display);
         }
+        Ok(())
     }
 }
 
 impl MouseActions for X11MouseManager {
-    fn move_to(&self, x: usize, y: usize) {
+    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
         unsafe {
             XWarpPointer(self.display, 0, self.window, 0, 0, 0, 0, x as i32, y as i32);
             XFlush(self.display);
         }
+        Ok(())
     }
 
-    fn get_position(&self) -> (i32, i32) {
+    fn get_position(&self) -> Result<(i32, i32), Error> {
         let mut x = 0;
         let mut y = 0;
         let mut void = 0;
         let mut mask = 0;
 
         unsafe {
-            XQueryPointer(
+            let out = XQueryPointer(
                 self.display,
                 self.window,
                 &mut void,
@@ -58,25 +61,31 @@ impl MouseActions for X11MouseManager {
                 &mut y,
                 &mut mask,
             );
+
+            // If XQueryPointer returns False (which is an enum value that corresponds to 0)
+            // that means the pointer is not on the same screen as the specified window
+            if out == 0 {
+                return Err(Error::X11PointerWindowMismatch);
+            }
         }
 
-        return (x, y);
+        Ok((x, y))
     }
 
-    fn press_button(&self, button: &MouseButton) {
-        self.button_event(button, true);
+    fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
+        self.button_event(button, true)
     }
 
-    fn release_button(&self, button: &MouseButton) {
-        self.button_event(button, false);
+    fn release_button(&self, button: &MouseButton) -> Result<(), Error> {
+        self.button_event(button, false)
     }
 
-    fn click_button(&self, button: &MouseButton) {
-        self.press_button(button);
-        self.release_button(button);
+    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
+        self.press_button(button)?;
+        self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection) {
+    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
         let btn = match direction {
             ScrollDirection::Up => 4,
             ScrollDirection::Down => 5,
@@ -86,6 +95,7 @@ impl MouseActions for X11MouseManager {
             XTestFakeButtonEvent(self.display, btn, false, 0);
             XFlush(self.display);
         }
+        Ok(())
     }
 }
 
@@ -145,7 +155,7 @@ extern "C" {
         win_x_return: *mut c_int,
         win_y_return: *mut c_int,
         mask_return: *mut c_uint,
-    ) -> bool;
+    ) -> c_int;
 }
 
 /// XTest function definitions

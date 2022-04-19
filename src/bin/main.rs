@@ -63,31 +63,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(("move_to", sub_matches)) => {
             let x: usize = sub_matches.value_of_t_or_exit("x_position");
             let y: usize = sub_matches.value_of_t_or_exit("y_position");
-            mouse_manager.move_to(x, y);
+            mouse_manager.move_to(x, y)?;
         }
         Some(("get_position", _)) => {
-            let (x, y) = mouse_manager.get_position();
+            let (x, y) = mouse_manager.get_position()?;
             println!("{x} {y}");
         }
         Some(("press_button", sub_matches)) => {
             let button_arg: String = sub_matches.value_of_t_or_exit("button");
             let button = get_mouse_button(&button_arg)?;
-            mouse_manager.press_button(&button);
+            mouse_manager.press_button(&button)?;
         }
         Some(("release_button", sub_matches)) => {
             let button_arg: String = sub_matches.value_of_t_or_exit("button");
             let button = get_mouse_button(&button_arg)?;
-            mouse_manager.release_button(&button);
+            mouse_manager.release_button(&button)?;
         }
         Some(("click_button", sub_matches)) => {
             let button_arg: String = sub_matches.value_of_t_or_exit("button");
             let button = get_mouse_button(&button_arg)?;
-            mouse_manager.click_button(&button);
+            mouse_manager.click_button(&button)?;
         }
         Some(("scroll_wheel", sub_matches)) => {
             let direction_arg: String = sub_matches.value_of_t_or_exit("direction");
             let direction = get_scroll_direction(&direction_arg)?;
-            mouse_manager.scroll_wheel(&direction);
+            mouse_manager.scroll_wheel(&direction)?;
         }
         _ => {
             panic!("unknown subcommand, please see mouce --help");

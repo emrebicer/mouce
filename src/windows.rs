@@ -4,6 +4,7 @@
 /// Uses the User32 system library
 ///
 use crate::common::{MouseActions, MouseButton, ScrollDirection};
+use crate::error::Error;
 use std::mem::size_of;
 use std::os::raw::{c_int, c_long, c_uint, c_ulong};
 
@@ -14,8 +15,8 @@ impl WindowsMouseManager {
         Box::new(WindowsMouseManager {})
     }
 
-    fn send_input(&self, event: MouseEvent, mouse_data: i32) {
-        let (x, y) = self.get_position();
+    fn send_input(&self, event: MouseEvent, mouse_data: i32) -> Result<(), Error> {
+        let (x, y) = self.get_position()?;
         let mut input = Input {
             r#type: INPUT_MOUSE,
             mi: MouseInput {
@@ -29,57 +30,69 @@ impl WindowsMouseManager {
         };
 
         unsafe {
-            SendInput(1, &mut input, size_of::<Input>() as i32);
+            let result = SendInput(1, &mut input, size_of::<Input>() as i32);
+            // If the function returns 0, it means the input was blocked by another thread
+            if result == 0 {
+                return Err(Error::InputIsBlocked);
+            }
         }
+        Ok(())
     }
 }
 
 impl MouseActions for WindowsMouseManager {
-    fn move_to(&self, x: usize, y: usize) {
+    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
         unsafe {
-            SetCursorPos(x as c_int, y as c_int);
+            let result = SetCursorPos(x as c_int, y as c_int);
+            if result == 0 {
+                return Err(Error::CustomError("failed to set the cursor position"));
+            }
         }
+        Ok(())
     }
 
-    fn get_position(&self) -> (i32, i32) {
+    fn get_position(&self) -> Result<(i32, i32), Error> {
         let mut out = Point { x: 0, y: 0 };
         unsafe {
-            GetCursorPos(&mut out);
+            let result = GetCursorPos(&mut out);
+            if result == 0 {
+                return Err(Error::CustomError("failed to get the cursor position"));
+            }
         }
-        return (out.x, out.y);
+        return Ok((out.x, out.y));
     }
 
-    fn press_button(&self, button: &MouseButton) {
+    fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
         let event = match button {
             MouseButton::Left => MouseEvent::MouseEventFLeftDown,
             MouseButton::Middle => MouseEvent::MouseEventFMiddleDown,
             MouseButton::Right => MouseEvent::MouseEventFRightDown,
         };
 
-        self.send_input(event, 0);
+        self.send_input(event, 0)
     }
 
-    fn release_button(&self, button: &MouseButton) {
+    fn release_button(&self, button: &MouseButton) -> Result<(), Error> {
         let event = match button {
             MouseButton::Left => MouseEvent::MouseEventFLeftUp,
             MouseButton::Middle => MouseEvent::MouseEventFMiddleUp,
             MouseButton::Right => MouseEvent::MouseEventFRightUp,
         };
 
-        self.send_input(event, 0);
+        self.send_input(event, 0)
     }
 
-    fn click_button(&self, button: &MouseButton) {
-        self.press_button(button);
-        self.release_button(button);
+    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
+        self.press_button(button)?;
+        self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection) {
+    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
         let scroll_amount = match direction {
             ScrollDirection::Up => 150,
             ScrollDirection::Down => -150,
         };
-        self.send_input(MouseEvent::MouseEventFWheel, scroll_amount);
+        self.send_input(MouseEvent::MouseEventFWheel, scroll_amount)
     }
 }
 
@@ -122,7 +135,7 @@ enum MouseEvent {
 #[link(name = "user32")]
 extern "system" {
     fn SetCursorPos(x: c_int, y: c_int) -> c_int;
-    fn GetCursorPos(lppoint: *mut Point) -> bool;
-    fn SendInput(cInputs: c_uint, pInputs: LPInput, cbSize: c_int) -> c_uint;
+    fn GetCursorPos(lppoint: *mut Point) -> c_int;
+    fn SendInput(c_inputs: c_uint, p_inputs: LPInput, cb_size: c_int) -> c_uint;
     fn GetMessageExtraInfo() -> LParam;
 }

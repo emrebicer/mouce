@@ -6,6 +6,7 @@ pub enum Error {
     WriteFailed,
     X11PointerWindowMismatch,
     InputIsBlocked,
+    CGCouldNotCreateEvent,
     CustomError(&'static str),
 }
 
@@ -22,6 +23,7 @@ impl fmt::Display for Error {
             Error::InputIsBlocked => {
                 "failed to send input, the input was already blocked by another thread"
             }
+            Error::CGCouldNotCreateEvent => "CoreGraphics: failed to create mouse event",
             Error::CustomError(err_description) => err_description,
         };
 

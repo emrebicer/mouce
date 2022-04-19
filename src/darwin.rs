@@ -4,6 +4,7 @@
 /// Uses the CoreGraphics (a.k.a Quartz) framework
 ///
 use crate::common::{MouseActions, MouseButton, ScrollDirection};
+use crate::error::Error;
 use std::os::raw::{c_double, c_int, c_void};
 use std::ptr::null_mut;
 
@@ -14,8 +15,12 @@ impl DarwinMouseManager {
         Box::new(DarwinMouseManager {})
     }
 
-    fn create_mouse_event(&self, event_type: CGEventType, mouse_button: CGMouseButton) {
-        let (pos_x, pos_y) = self.get_position();
+    fn create_mouse_event(
+        &self,
+        event_type: CGEventType,
+        mouse_button: CGMouseButton,
+    ) -> Result<(), Error> {
+        let (pos_x, pos_y) = self.get_position()?;
         let position = CGPoint {
             x: pos_x as c_double,
             y: pos_y as c_double,
@@ -23,75 +28,96 @@ impl DarwinMouseManager {
 
         unsafe {
             let event = CGEventCreateMouseEvent(null_mut(), event_type, position, mouse_button);
+            if event == null_mut() {
+                return Err(Error::CGCouldNotCreateEvent);
+            }
             CGEventPost(CGEventTapLocation::CGHIDEventTap, event);
             CFRelease(event as CFTypeRef);
         }
+
+        Ok(())
     }
 
-    fn create_scroll_wheel_event(&self, distance: c_int) {
+    fn create_scroll_wheel_event(&self, distance: c_int) -> Result<(), Error> {
         unsafe {
             let event =
                 CGEventCreateScrollWheelEvent(null_mut(), CGScrollEventUnit::Line, 1, distance);
+            if event == null_mut() {
+                return Err(Error::CGCouldNotCreateEvent);
+            }
             CGEventPost(CGEventTapLocation::CGHIDEventTap, event);
             CFRelease(event as CFTypeRef);
         }
+        Ok(())
     }
 }
 
 impl MouseActions for DarwinMouseManager {
-    fn move_to(&self, x: usize, y: usize) {
+    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
         let cg_point = CGPoint {
             x: x as f64,
             y: y as f64,
         };
         unsafe {
-            CGWarpMouseCursorPosition(cg_point);
-        }
+            let result = CGWarpMouseCursorPosition(cg_point);
+            if result != CGError::Success {
+                return Err(Error::CustomError(
+                    "Failed to move the mouse, CGError is not Success",
+                ));
+            }
+        };
+
+        Ok(())
     }
 
-    fn get_position(&self) -> (i32, i32) {
+    fn get_position(&self) -> Result<(i32, i32), Error> {
         unsafe {
             let event = CGEventCreate(null_mut());
+            if event == null_mut() {
+                return Err(Error::CGCouldNotCreateEvent);
+            }
             let cursor = CGEventGetLocation(event);
             CFRelease(event as CFTypeRef);
-            return (cursor.x as i32, cursor.y as i32);
+            return Ok((cursor.x as i32, cursor.y as i32));
         }
     }
 
-    fn press_button(&self, button: &MouseButton) {
+    fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
         let (event_type, mouse_button) = match button {
             MouseButton::Left => (CGEventType::LeftMouseDown, CGMouseButton::Left),
             MouseButton::Middle => (CGEventType::OtherMouseDown, CGMouseButton::Center),
             MouseButton::Right => (CGEventType::RightMouseDown, CGMouseButton::Right),
         };
-        self.create_mouse_event(event_type, mouse_button);
+        self.create_mouse_event(event_type, mouse_button)?;
+        Ok(())
     }
 
-    fn release_button(&self, button: &MouseButton) {
+    fn release_button(&self, button: &MouseButton) -> Result<(), Error> {
         let (event_type, mouse_button) = match button {
             MouseButton::Left => (CGEventType::LeftMouseUp, CGMouseButton::Left),
             MouseButton::Middle => (CGEventType::OtherMouseUp, CGMouseButton::Center),
             MouseButton::Right => (CGEventType::RightMouseUp, CGMouseButton::Right),
         };
-        self.create_mouse_event(event_type, mouse_button);
+        self.create_mouse_event(event_type, mouse_button)
     }
 
-    fn click_button(&self, button: &MouseButton) {
-        self.press_button(button);
-        self.release_button(button);
+    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
+        self.press_button(button)?;
+        self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection) {
+    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
         let distance = match direction {
             ScrollDirection::Up => 5,
             ScrollDirection::Down => -5,
         };
-        self.create_scroll_wheel_event(distance);
+        self.create_scroll_wheel_event(distance)
     }
 }
 
 /// CoreGraphics type definitions
 #[allow(dead_code)]
+#[derive(PartialEq, Eq)]
 #[repr(C)]
 enum CGError {
     CannotComplete = 1004,

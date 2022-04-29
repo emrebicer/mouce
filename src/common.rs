@@ -14,6 +14,11 @@ pub enum ScrollDirection {
 pub trait MouseActions {
     /// Move the mouse to the given `x`, `y` coordinates
     fn move_to(&self, x: usize, y: usize) -> Result<(), Error>;
+    /// Move the mouse relative to the current position
+    fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
+        let (x, y) = self.get_position()?;
+        self.move_to((x + x_offset) as usize, (y + y_offset) as usize)
+    }
     /// Get the current position of the mouse
     fn get_position(&self) -> Result<(i32, i32), Error>;
     /// Press down the given mouse button
@@ -21,7 +26,10 @@ pub trait MouseActions {
     /// Release the given mouse button
     fn release_button(&self, button: &MouseButton) -> Result<(), Error>;
     /// Click the given mouse button
-    fn click_button(&self, button: &MouseButton) -> Result<(), Error>;
+    fn click_button(&self, button: &MouseButton) -> Result<(), Error>{
+        self.press_button(&button)?;
+        self.release_button(&button)
+    }
     /// Scroll the mouse wheel towards to the given direction
     fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error>;
 }
@@ -60,12 +68,40 @@ mod tests {
 
     #[test]
     #[ignore]
+    fn move_relative_left_to_right() {
+        let manager = Mouse::new();
+        let sleep_duration = time::Duration::from_millis(1);
+        let mut x = 0;
+        assert_eq!(manager.move_to(0, 540), Ok(()));
+        while x < 1920 {
+            assert_eq!(manager.move_relative(1, 0), Ok(()));
+            x += 1;
+            thread::sleep(sleep_duration);
+        }
+    }
+
+    #[test]
+    #[ignore]
     fn move_to_top_to_bottom() {
         let manager = Mouse::new();
         let sleep_duration = time::Duration::from_millis(1);
         let mut y = 0;
         while y < 1080 {
             assert_eq!(manager.move_to(960, y), Ok(()));
+            y += 1;
+            thread::sleep(sleep_duration);
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn move_relative_top_to_bottom() {
+        let manager = Mouse::new();
+        let sleep_duration = time::Duration::from_millis(1);
+        let mut y = 0;
+        assert_eq!(manager.move_to(960, 0), Ok(()));
+        while y < 1080 {
+            assert_eq!(manager.move_relative(0, 1), Ok(()));
             y += 1;
             thread::sleep(sleep_duration);
         }

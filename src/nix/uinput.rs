@@ -96,7 +96,12 @@ impl UInputMouseManager {
 
     /// Syncronize the device
     fn syncronize(&self) -> Result<(), Error> {
-        self.emit(EV_SYN, SYN_REPORT, 0)
+        self.emit(EV_SYN, SYN_REPORT, 0)?;
+        // Give uinput some time to update the mouse location,
+        // otherwise it fails to move the mouse on release mode
+        // A delay of 1 milliseconds seems to be enough for it
+        thread::sleep(Duration::from_millis(1));
+        Ok(())
     }
 
     /// Move the mouse relative to the current position
@@ -111,8 +116,8 @@ impl UInputMouseManager {
         // behavior is the same on other projects that make use of
         // uinput. e.g. `ydotool`. When you try to move your mouse,
         // it will move 2x further pixels
-        self.emit(EV_REL, REL_X as i32, x / 2)?;
-        self.emit(EV_REL, REL_Y as i32, y / 2)?;
+        self.emit(EV_REL, REL_X as i32, (x as f32 / 2.).ceil() as i32)?;
+        self.emit(EV_REL, REL_Y as i32, (y as f32 / 2.).ceil() as i32)?;
         self.syncronize()
     }
 }
@@ -134,12 +139,12 @@ impl MouseActions for UInputMouseManager {
         //
         // As a work around solution; first set the mouse to top left, then
         // call relative move function to simulate an absolute move event
-        self.move_relative(i32::min_value(), i32::min_value())?;
-        // Give uinput some time to update the mouse location,
-        // otherwise it fails to move the mouse on release mode
-        // A delay of 1 milliseconds seems to be enough for it
-        thread::sleep(Duration::from_millis(1));
+        self.move_relative(i32::MIN, i32::MIN)?;
         self.move_relative(x as i32, y as i32)
+    }
+
+    fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
+        self.move_relative(x_offset, y_offset)
     }
 
     fn get_position(&self) -> Result<(i32, i32), Error> {

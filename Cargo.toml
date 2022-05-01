@@ -32,3 +32,4 @@ required-features = ["cli"]
 
 [dependencies]
 clap = { version = "3.1.8", features = ["derive"], optional = true }
+glob = "0.3.0"

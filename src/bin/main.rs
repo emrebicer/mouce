@@ -54,6 +54,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .long("direction")
                     .short('d')
                 .takes_value(true))
+        )
+        .subcommand(
+            Command::new("listen")
+                .about("Listen mouse events and print them to the terminal")
         );
 
     let mouse_manager = mouce::Mouse::new();
@@ -88,6 +92,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let direction_arg: String = sub_matches.value_of_t_or_exit("direction");
             let direction = get_scroll_direction(&direction_arg)?;
             mouse_manager.scroll_wheel(&direction)?;
+        }
+        Some(("listen", _)) => {
+            mouse_manager.hook(vec![Box::new(|event| {println!("{:?}", event);})])?;
+            loop {};
         }
         _ => {
             panic!("unknown subcommand, please see mouce --help");

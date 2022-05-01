@@ -5,7 +5,7 @@
 /// - Unsupported mouse actions
 ///     - get_position is not available on uinput
 ///
-use crate::common::{MouseActions, MouseButton, ScrollDirection};
+use crate::common::{MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
 use std::ffi::CString;
 use std::fs::File;
@@ -185,6 +185,10 @@ impl MouseActions for UInputMouseManager {
         self.emit(EV_REL, REL_WHEEL as i32, scroll_value)?;
         self.syncronize()
     }
+
+    fn hook(&self, callbacks: Vec<Box<dyn Fn(&MouseEvent) + Send>>) -> Result<(), Error> {
+        super::hook_nix(callbacks)
+    }
 }
 
 /// ioctl and uinput definitions
@@ -195,16 +199,16 @@ const UI_DEV_SETUP: c_ulong = 1079792899;
 const UI_DEV_CREATE: c_ulong = 21761;
 const UI_DEV_DESTROY: c_uint = 21762;
 
+pub const EV_KEY: c_int = 0x01;
+pub const EV_REL: c_int = 0x02;
+pub const REL_X: c_uint = 0x00;
+pub const REL_Y: c_uint = 0x01;
+pub const REL_WHEEL: c_uint = 0x08;
+pub const BTN_LEFT: c_int = 0x110;
+pub const BTN_RIGHT: c_int = 0x111;
+pub const BTN_MIDDLE: c_int = 0x112;
 const SYN_REPORT: c_int = 0x00;
-const EV_KEY: c_int = 0x01;
 const EV_SYN: c_int = 0x00;
-const EV_REL: c_int = 0x02;
-const REL_X: c_uint = 0x00;
-const REL_Y: c_uint = 0x01;
-const REL_WHEEL: c_uint = 0x08;
-const BTN_LEFT: c_int = 0x110;
-const BTN_RIGHT: c_int = 0x111;
-const BTN_MIDDLE: c_int = 0x112;
 const BUS_USB: c_ushort = 0x03;
 
 /// uinput types
@@ -224,17 +228,17 @@ struct InputId {
 }
 
 #[repr(C)]
-struct InputEvent {
-    time: TimeVal,
-    r#type: u16,
-    code: u16,
-    value: c_int,
+pub struct InputEvent {
+    pub time: TimeVal,
+    pub r#type: u16,
+    pub code: u16,
+    pub value: c_int,
 }
 
 #[repr(C)]
-struct TimeVal {
-    tv_sec: c_ulong,
-    tv_usec: c_ulong,
+pub struct TimeVal {
+    pub tv_sec: c_ulong,
+    pub tv_usec: c_ulong,
 }
 
 extern "C" {

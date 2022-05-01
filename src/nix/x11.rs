@@ -2,7 +2,7 @@
 /// This module contains the mouse action functions
 /// for the unix-like systems that use X11
 ///
-use crate::common::{MouseActions, MouseButton, ScrollDirection};
+use crate::common::{MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
 use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
@@ -96,6 +96,10 @@ impl MouseActions for X11MouseManager {
             XFlush(self.display);
         }
         Ok(())
+    }
+
+    fn hook(&self, callbacks: Vec<Box<dyn Fn(&MouseEvent) + Send>>) -> Result<(), Error> {
+        super::hook_nix(callbacks)
     }
 }
 

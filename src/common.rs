@@ -1,14 +1,24 @@
 use crate::error::Error;
 
+#[derive(Debug)]
 pub enum MouseButton {
     Left,
     Middle,
     Right,
 }
 
+#[derive(Debug)]
 pub enum ScrollDirection {
     Up,
     Down,
+}
+
+#[derive(Debug)]
+pub enum MouseEvent {
+    Move(i32, i32),
+    Press(MouseButton),
+    Release(MouseButton),
+    Scroll(ScrollDirection),
 }
 
 pub trait MouseActions {
@@ -26,12 +36,14 @@ pub trait MouseActions {
     /// Release the given mouse button
     fn release_button(&self, button: &MouseButton) -> Result<(), Error>;
     /// Click the given mouse button
-    fn click_button(&self, button: &MouseButton) -> Result<(), Error>{
+    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
         self.press_button(&button)?;
         self.release_button(&button)
     }
     /// Scroll the mouse wheel towards to the given direction
     fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error>;
+    /// Attach handler functions for mouse events
+    fn hook(&self, callbacks: Vec<Box<dyn Fn(&MouseEvent) + Send>>) -> Result<(), Error>;
 }
 
 #[cfg(test)]

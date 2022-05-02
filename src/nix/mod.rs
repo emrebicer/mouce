@@ -2,18 +2,20 @@
 /// This module contains the mouse action functions
 /// for the unix-like systems
 ///
-use crate::common::{MouseActions, MouseButton, MouseEvent, ScrollDirection};
+use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
 use crate::nix::uinput::{
     InputEvent, TimeVal, BTN_LEFT, BTN_MIDDLE, BTN_RIGHT, EV_KEY, EV_REL, REL_WHEEL, REL_X, REL_Y,
 };
 use glob::glob;
+use std::collections::HashMap;
 use std::fs::File;
 use std::mem::size_of;
 use std::os::unix::io::AsRawFd;
 use std::process::Command;
 use std::str::from_utf8;
 use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 mod uinput;
@@ -46,8 +48,10 @@ impl NixMouseManager {
     }
 }
 
-/// Attach handler functions for mouse events
-fn hook_nix(callbacks: Vec<Box<dyn Fn(&MouseEvent) + Send>>) -> Result<(), Error> {
+/// Start the event listener for nix systems
+fn start_nix_listener(
+    callbacks: &Arc<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>>,
+) -> Result<(), Error> {
     let (tx, rx) = mpsc::channel();
 
     // Read all the mouse events listed under /dev/input/by-id
@@ -59,10 +63,10 @@ fn hook_nix(callbacks: Vec<Box<dyn Fn(&MouseEvent) + Send>>) -> Result<(), Error
             .display()
             .to_string();
 
-        let event = File::options()
-            .read(true)
-            .open(path)
-            .expect("event-mouse file can not be opened");
+        let event = match File::options().read(true).open(path) {
+            Ok(file) => file,
+            Err(_) => return Err(Error::PermissionDenied),
+        };
 
         // Create a thread for this mouse-event file
         let tx = tx.clone();
@@ -83,6 +87,7 @@ fn hook_nix(callbacks: Vec<Box<dyn Fn(&MouseEvent) + Send>>) -> Result<(), Error
         });
     }
 
+    let callbacks = callbacks.clone();
     // Create a thread for handling the callbacks
     thread::spawn(move || {
         for received in rx {
@@ -129,7 +134,7 @@ fn hook_nix(callbacks: Vec<Box<dyn Fn(&MouseEvent) + Send>>) -> Result<(), Error
             };
 
             // Invoke all given callbacks with the constructed mouse event
-            for callback in callbacks.iter() {
+            for callback in callbacks.lock().unwrap().values() {
                 callback(&mouse_event);
             }
         }

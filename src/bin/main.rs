@@ -60,7 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .about("Listen mouse events and print them to the terminal")
         );
 
-    let mouse_manager = mouce::Mouse::new();
+    let mut mouse_manager = mouce::Mouse::new();
     let matches = app.get_matches();
 
     match matches.subcommand() {
@@ -94,8 +94,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             mouse_manager.scroll_wheel(&direction)?;
         }
         Some(("listen", _)) => {
-            mouse_manager.hook(vec![Box::new(|event| {println!("{:?}", event);})])?;
-            loop {};
+            mouse_manager.hook(Box::new(|event| {
+                println!("{:?}", event);
+            }))?;
+            loop {}
         }
         _ => {
             panic!("unknown subcommand, please see mouce --help");

@@ -1,5 +1,7 @@
 use crate::error::Error;
 
+pub type CallbackId = u8;
+
 #[derive(Debug)]
 pub enum MouseButton {
     Left,
@@ -42,12 +44,17 @@ pub trait MouseActions {
     }
     /// Scroll the mouse wheel towards to the given direction
     fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error>;
-    /// Attach handler functions for mouse events
-    fn hook(&self, callbacks: Vec<Box<dyn Fn(&MouseEvent) + Send>>) -> Result<(), Error>;
+    /// Attach a callback function for mouse events
+    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error>;
+    /// Remove a callback function with the given `CallbackId`
+    fn unhook(&mut self, callback_id: CallbackId) -> Result<(), Error>;
+    /// Remove all callback functions
+    fn unhook_all(&mut self) -> Result<(), Error>;
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::error::Error;
     use crate::{common::MouseButton, common::ScrollDirection, Mouse};
     use std::{thread, time};
 
@@ -168,6 +175,28 @@ mod tests {
             assert_eq!(manager.scroll_wheel(&ScrollDirection::Up), Ok(()));
             let sleep_duration = time::Duration::from_millis(250);
             thread::sleep(sleep_duration);
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn hook_and_unhook() {
+        let mut manager = Mouse::new();
+        assert_eq!(manager.unhook(5), Err(Error::UnhookFailed));
+        let hook_result = manager.hook(Box::new(|e| println!("{:?}", e)));
+        match hook_result {
+            Ok(id) => {
+                assert_eq!(manager.unhook(id), Ok(()));
+
+                manager.hook(Box::new(|e| println!("{:?}", e))).unwrap();
+                manager.hook(Box::new(|e| println!("{:?}", e))).unwrap();
+                manager.hook(Box::new(|e| println!("{:?}", e))).unwrap();
+                let id = manager.hook(Box::new(|e| println!("{:?}", e))).unwrap();
+
+                manager.unhook_all().unwrap();
+                assert_eq!(manager.unhook(id), Err(Error::UnhookFailed));
+            }
+            Err(err) => assert_eq!(Error::PermissionDenied, err),
         }
     }
 }

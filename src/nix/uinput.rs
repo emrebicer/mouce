@@ -5,18 +5,23 @@
 /// - Unsupported mouse actions
 ///     - get_position is not available on uinput
 ///
-use crate::common::{MouseActions, MouseButton, MouseEvent, ScrollDirection};
+use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
+use std::collections::HashMap;
 use std::ffi::CString;
 use std::fs::File;
 use std::mem::size_of;
 use std::os::raw::{c_int, c_long, c_uint, c_ulong, c_ushort};
 use std::os::unix::prelude::AsRawFd;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
 pub struct UInputMouseManager {
     uinput_file: File,
+    callbacks: Arc<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>>,
+    callback_counter: CallbackId,
+    is_listening: bool,
 }
 
 impl UInputMouseManager {
@@ -26,6 +31,9 @@ impl UInputMouseManager {
                 .write(true)
                 .open("/dev/uinput")
                 .expect("uinput file can not be opened"),
+            callbacks: Arc::new(Mutex::new(HashMap::new())),
+            callback_counter: 0,
+            is_listening: false,
         };
         let fd = manager.uinput_file.as_raw_fd();
         unsafe {
@@ -186,8 +194,28 @@ impl MouseActions for UInputMouseManager {
         self.syncronize()
     }
 
-    fn hook(&self, callbacks: Vec<Box<dyn Fn(&MouseEvent) + Send>>) -> Result<(), Error> {
-        super::hook_nix(callbacks)
+    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
+        if !self.is_listening {
+            super::start_nix_listener(&self.callbacks)?;
+            self.is_listening = true;
+        }
+
+        let id = self.callback_counter;
+        self.callbacks.lock().unwrap().insert(id, callback);
+        self.callback_counter += 1;
+        Ok(id)
+    }
+
+    fn unhook(&mut self, callback_id: CallbackId) -> Result<(), Error> {
+        match self.callbacks.lock().unwrap().remove(&callback_id) {
+            Some(_) => Ok(()),
+            None => Err(Error::UnhookFailed),
+        }
+    }
+
+    fn unhook_all(&mut self) -> Result<(), Error> {
+        self.callbacks.lock().unwrap().clear();
+        Ok(())
     }
 }
 

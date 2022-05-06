@@ -122,9 +122,9 @@ fn start_nix_listener(
                         ScrollDirection::Down
                     })
                 } else if code == REL_X {
-                    MouseEvent::Move(val, 0)
+                    MouseEvent::RelativeMove(val, 0)
                 } else if code == REL_Y {
-                    MouseEvent::Move(0, val)
+                    MouseEvent::RelativeMove(0, val)
                 } else {
                     continue;
                 }

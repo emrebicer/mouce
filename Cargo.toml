@@ -1,14 +1,14 @@
 [package]
 name = "mouce"
-version = "0.1.5"
+version = "0.2.0"
 edition = "2021"
 authors = ["Emre Bicer <oebicer@gmail.com>"]
 license = "MIT"
-description = "A library that aims to help simulating mouse actions across different platforms."
+description = "A library that aims to help simulating and listening mouse actions across different platforms."
 homepage = "https://github.com/emrebicer/mouce"
 repository = "https://github.com/emrebicer/mouce"
 readme = "README.md"
-keywords = ["mouse", "movement", "click", "scroll", "events"]
+keywords = ["mouse", "events", "listen", "simulate", "click"]
 categories = ["accessibility", "command-line-utilities"]
 
 [profile.release]

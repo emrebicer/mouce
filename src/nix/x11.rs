@@ -2,13 +2,18 @@
 /// This module contains the mouse action functions
 /// for the unix-like systems that use X11
 ///
-use crate::common::{MouseActions, MouseButton, ScrollDirection};
+use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
+use std::collections::HashMap;
 use std::os::raw::{c_char, c_int, c_uint, c_ulong};
+use std::sync::{Arc, Mutex};
 
 pub struct X11MouseManager {
     display: *mut Display,
     window: Window,
+    callbacks: Arc<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>>,
+    callback_counter: CallbackId,
+    is_listening: bool,
 }
 
 impl X11MouseManager {
@@ -16,7 +21,13 @@ impl X11MouseManager {
         unsafe {
             let display = XOpenDisplay(&0);
             let window = XDefaultRootWindow(display);
-            X11MouseManager { display, window }
+            X11MouseManager {
+                display,
+                window,
+                callbacks: Arc::new(Mutex::new(HashMap::new())),
+                callback_counter: 0,
+                is_listening: false,
+            }
         }
     }
 
@@ -95,6 +106,30 @@ impl MouseActions for X11MouseManager {
             XTestFakeButtonEvent(self.display, btn, false, 0);
             XFlush(self.display);
         }
+        Ok(())
+    }
+
+    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
+        if !self.is_listening {
+            super::start_nix_listener(&self.callbacks)?;
+            self.is_listening = true;
+        }
+
+        let id = self.callback_counter;
+        self.callbacks.lock().unwrap().insert(id, callback);
+        self.callback_counter += 1;
+        Ok(id)
+    }
+
+    fn unhook(&mut self, callback_id: CallbackId) -> Result<(), Error> {
+        match self.callbacks.lock().unwrap().remove(&callback_id) {
+            Some(_) => Ok(()),
+            None => Err(Error::UnhookFailed),
+        }
+    }
+
+    fn unhook_all(&mut self) -> Result<(), Error> {
+        self.callbacks.lock().unwrap().clear();
         Ok(())
     }
 }

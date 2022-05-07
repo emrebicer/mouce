@@ -1,20 +1,25 @@
 [package]
 name = "mouce"
-version = "0.1.5"
+version = "0.2.0"
 edition = "2021"
 authors = ["Emre Bicer <oebicer@gmail.com>"]
 license = "MIT"
-description = "A library that aims to help simulating mouse actions across different platforms."
+description = "A library that aims to help simulating and listening mouse actions across different platforms."
 homepage = "https://github.com/emrebicer/mouce"
 repository = "https://github.com/emrebicer/mouce"
 readme = "README.md"
-keywords = ["mouse", "movement", "click", "scroll", "events"]
+keywords = ["mouse", "events", "listen", "simulate", "click"]
 categories = ["accessibility", "command-line-utilities"]
 
 [profile.release]
-# Enable debug assertions, otherwise uinput module
-# does not work properly on release mode
-debug-assertions = true
+# Keep the opt-level at 0 for release mode, otherwise uinput module
+# does not work as expected. Currently there is no way to target only
+# unix-like systems, so this profle change applies to all systems.
+#
+# This change does not seem to affect the running speed (ran tests with different
+# opt-levels and benchmarked them with hyperfine, they all ran at very similar speeds).
+# But changing the opt-level results in a small increase on the executable size.
+opt-level = 0
 
 [features]
 cli = ["clap"]
@@ -29,6 +34,9 @@ path = "src/bin/main.rs"
 required-features = ["cli"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
+glob = "0.3.0"
 
 [dependencies]
 clap = { version = "3.1.8", features = ["derive"], optional = true }

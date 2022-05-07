@@ -28,6 +28,8 @@ pub use crate::windows::WindowsMouseManager as Mouse;
 pub mod common;
 pub mod error;
 
+pub use common::MouseActions;
+
 #[cfg(test)]
 mod tests {
     use crate::Mouse;

@@ -1,12 +1,12 @@
 # mouce
-Mouce is a library written in Rust that aims to help simulating mouse actions across different platforms.
+Mouce is a library written in Rust that aims to help simulating and listening mouse actions across different platforms.
 ## Supported platforms
 - **Windows** ✅
   - Tested on Windows 10
   - Uses User32 system library
 - **MacOS** ✅
   - Tested on a MacBook Pro (Retina, 13-inch, Mid 2014) with Big Sur installed on it
-  - Uses CoreGraphics framework
+  - Uses CoreGraphics and CoreFoundation frameworks
 - **Unix-like systems**
   - **X11** ✅
     - Tested on i3wm Arch Linux
@@ -20,6 +20,8 @@ Mouce is a library written in Rust that aims to help simulating mouse actions ac
 ```Rust
 /// Move the mouse to the given `x`, `y` coordinates
 fn move_to(&self, x: usize, y: usize) -> Result<(), Error>;
+/// Move the mouse relative to the current position
+fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error>;
 /// Get the current position of the mouse
 fn get_position(&self) -> Result<(i32, i32), Error>;
 /// Press down the given mouse button
@@ -30,6 +32,12 @@ fn release_button(&self, button: &MouseButton) -> Result<(), Error>;
 fn click_button(&self, button: &MouseButton) -> Result<(), Error>;
 /// Scroll the mouse wheel towards to the given direction
 fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error>;
+/// Attach a callback function to mouse events
+fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error>;
+/// Remove the callback function with the given `CallbackId`
+fn unhook(&mut self, callback_id: CallbackId) -> Result<(), Error>;
+/// Remove all callback functions
+fn unhook_all(&mut self) -> Result<(), Error>;
 ```
 ## Example
 This example program moves the mouse from left to right;
@@ -50,10 +58,14 @@ fn main() {
     }
 }
 ```
+To see more examples, you can look at the documentation by running;
+```fish
+cargo doc --open
+```
 ## CLI binary
 mouce comes with an example CLI program that uses mouce library functions.
 You can install the binary with;
-```terminal
+```fish
 cargo install mouce --features="cli"
 ```
 and see ```mouce --help``` for further details.

@@ -5,18 +5,23 @@
 /// - Unsupported mouse actions
 ///     - get_position is not available on uinput
 ///
-use crate::common::{MouseActions, MouseButton, ScrollDirection};
+use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
+use std::collections::HashMap;
 use std::ffi::CString;
 use std::fs::File;
 use std::mem::size_of;
 use std::os::raw::{c_int, c_long, c_uint, c_ulong, c_ushort};
 use std::os::unix::prelude::AsRawFd;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
 pub struct UInputMouseManager {
     uinput_file: File,
+    callbacks: Arc<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>>,
+    callback_counter: CallbackId,
+    is_listening: bool,
 }
 
 impl UInputMouseManager {
@@ -26,6 +31,9 @@ impl UInputMouseManager {
                 .write(true)
                 .open("/dev/uinput")
                 .expect("uinput file can not be opened"),
+            callbacks: Arc::new(Mutex::new(HashMap::new())),
+            callback_counter: 0,
+            is_listening: false,
         };
         let fd = manager.uinput_file.as_raw_fd();
         unsafe {
@@ -96,7 +104,12 @@ impl UInputMouseManager {
 
     /// Syncronize the device
     fn syncronize(&self) -> Result<(), Error> {
-        self.emit(EV_SYN, SYN_REPORT, 0)
+        self.emit(EV_SYN, SYN_REPORT, 0)?;
+        // Give uinput some time to update the mouse location,
+        // otherwise it fails to move the mouse on release mode
+        // A delay of 1 milliseconds seems to be enough for it
+        thread::sleep(Duration::from_millis(1));
+        Ok(())
     }
 
     /// Move the mouse relative to the current position
@@ -111,8 +124,8 @@ impl UInputMouseManager {
         // behavior is the same on other projects that make use of
         // uinput. e.g. `ydotool`. When you try to move your mouse,
         // it will move 2x further pixels
-        self.emit(EV_REL, REL_X as i32, x / 2)?;
-        self.emit(EV_REL, REL_Y as i32, y / 2)?;
+        self.emit(EV_REL, REL_X as i32, (x as f32 / 2.).ceil() as i32)?;
+        self.emit(EV_REL, REL_Y as i32, (y as f32 / 2.).ceil() as i32)?;
         self.syncronize()
     }
 }
@@ -134,12 +147,12 @@ impl MouseActions for UInputMouseManager {
         //
         // As a work around solution; first set the mouse to top left, then
         // call relative move function to simulate an absolute move event
-        self.move_relative(i32::min_value(), i32::min_value())?;
-        // Give uinput some time to update the mouse location,
-        // otherwise it fails to move the mouse on release mode
-        // A delay of 1 milliseconds seems to be enough for it
-        thread::sleep(Duration::from_millis(1));
+        self.move_relative(i32::MIN, i32::MIN)?;
         self.move_relative(x as i32, y as i32)
+    }
+
+    fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
+        self.move_relative(x_offset, y_offset)
     }
 
     fn get_position(&self) -> Result<(i32, i32), Error> {
@@ -180,6 +193,30 @@ impl MouseActions for UInputMouseManager {
         self.emit(EV_REL, REL_WHEEL as i32, scroll_value)?;
         self.syncronize()
     }
+
+    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
+        if !self.is_listening {
+            super::start_nix_listener(&self.callbacks)?;
+            self.is_listening = true;
+        }
+
+        let id = self.callback_counter;
+        self.callbacks.lock().unwrap().insert(id, callback);
+        self.callback_counter += 1;
+        Ok(id)
+    }
+
+    fn unhook(&mut self, callback_id: CallbackId) -> Result<(), Error> {
+        match self.callbacks.lock().unwrap().remove(&callback_id) {
+            Some(_) => Ok(()),
+            None => Err(Error::UnhookFailed),
+        }
+    }
+
+    fn unhook_all(&mut self) -> Result<(), Error> {
+        self.callbacks.lock().unwrap().clear();
+        Ok(())
+    }
 }
 
 /// ioctl and uinput definitions
@@ -190,16 +227,16 @@ const UI_DEV_SETUP: c_ulong = 1079792899;
 const UI_DEV_CREATE: c_ulong = 21761;
 const UI_DEV_DESTROY: c_uint = 21762;
 
+pub const EV_KEY: c_int = 0x01;
+pub const EV_REL: c_int = 0x02;
+pub const REL_X: c_uint = 0x00;
+pub const REL_Y: c_uint = 0x01;
+pub const REL_WHEEL: c_uint = 0x08;
+pub const BTN_LEFT: c_int = 0x110;
+pub const BTN_RIGHT: c_int = 0x111;
+pub const BTN_MIDDLE: c_int = 0x112;
 const SYN_REPORT: c_int = 0x00;
-const EV_KEY: c_int = 0x01;
 const EV_SYN: c_int = 0x00;
-const EV_REL: c_int = 0x02;
-const REL_X: c_uint = 0x00;
-const REL_Y: c_uint = 0x01;
-const REL_WHEEL: c_uint = 0x08;
-const BTN_LEFT: c_int = 0x110;
-const BTN_RIGHT: c_int = 0x111;
-const BTN_MIDDLE: c_int = 0x112;
 const BUS_USB: c_ushort = 0x03;
 
 /// uinput types
@@ -219,17 +256,17 @@ struct InputId {
 }
 
 #[repr(C)]
-struct InputEvent {
-    time: TimeVal,
-    r#type: u16,
-    code: u16,
-    value: c_int,
+pub struct InputEvent {
+    pub time: TimeVal,
+    pub r#type: u16,
+    pub code: u16,
+    pub value: c_int,
 }
 
 #[repr(C)]
-struct TimeVal {
-    tv_sec: c_ulong,
-    tv_usec: c_ulong,
+pub struct TimeVal {
+    pub tv_sec: c_ulong,
+    pub tv_usec: c_ulong,
 }
 
 extern "C" {

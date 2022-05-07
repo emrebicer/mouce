@@ -241,7 +241,7 @@ mod tests {
     #[ignore]
     fn get_position() {
         let manager = Mouse::new();
-        match manager.move_to(0, 0) {
+        match manager.get_position() {
             Ok(_) => {
                 let positions = vec![
                     (0, 0),

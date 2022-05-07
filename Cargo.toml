@@ -12,9 +12,14 @@ keywords = ["mouse", "movement", "click", "scroll", "events"]
 categories = ["accessibility", "command-line-utilities"]
 
 [profile.release]
-# Enable debug assertions, otherwise uinput module
-# does not work properly on release mode
-debug-assertions = true
+# Keep the opt-level at 0 for release mode, otherwise uinput module
+# does not work as expected. Currently there is no way to target only
+# unix-like systems, so this profle change applies to all systems.
+#
+# This change does not seem to affect the running speed (ran tests with different
+# opt-levels and benchmarked them with hyperfine, they all ran at very similar speeds).
+# But changing the opt-level results in a small increase on the executable size.
+opt-level = 0
 
 [features]
 cli = ["clap"]

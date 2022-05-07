@@ -3,16 +3,28 @@
 /// for the darwin systems (MacOS)
 /// Uses the CoreGraphics (a.k.a Quartz) framework
 ///
-use crate::common::{MouseActions, MouseButton, ScrollDirection};
+use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
-use std::os::raw::{c_double, c_int, c_void};
+use std::collections::HashMap;
+use std::os::raw::{c_double, c_int, c_long, c_uint, c_ulong, c_void};
 use std::ptr::null_mut;
+use std::sync::Mutex;
+use std::thread;
 
-pub struct DarwinMouseManager {}
+static mut TAP_EVENT_REF: Option<CFTypeRef> = None;
+static mut CALLBACKS: Option<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>> = None;
+
+pub struct DarwinMouseManager {
+    callback_counter: CallbackId,
+    is_listening: bool,
+}
 
 impl DarwinMouseManager {
     pub fn new() -> Box<dyn MouseActions> {
-        Box::new(DarwinMouseManager {})
+        Box::new(DarwinMouseManager {
+            callback_counter: 0,
+            is_listening: false,
+        })
     }
 
     fn create_mouse_event(
@@ -49,6 +61,95 @@ impl DarwinMouseManager {
             CFRelease(event as CFTypeRef);
         }
         Ok(())
+    }
+
+    fn start_listener(&mut self) -> Result<(), Error> {
+        thread::spawn(move || {
+            unsafe extern "C" fn mouse_on_event_callback(
+                _proxy: *const c_void,
+                event_type: CGEventType,
+                cg_event: CGEventRef,
+                _user_info: *mut c_void,
+            ) -> CGEventRef {
+                // Construct the library's MouseEvent
+                let mouse_event = match event_type {
+                    CGEventType::LeftMouseDown => Some(MouseEvent::Press(MouseButton::Left)),
+                    CGEventType::LeftMouseUp => Some(MouseEvent::Release(MouseButton::Left)),
+                    CGEventType::RightMouseDown => Some(MouseEvent::Press(MouseButton::Right)),
+                    CGEventType::RightMouseUp => Some(MouseEvent::Release(MouseButton::Right)),
+                    CGEventType::OtherMouseDown => Some(MouseEvent::Press(MouseButton::Middle)),
+                    CGEventType::OtherMouseUp => Some(MouseEvent::Release(MouseButton::Middle)),
+                    CGEventType::MouseMoved => {
+                        let point = CGEventGetLocation(cg_event);
+                        Some(MouseEvent::AbsoluteMove(point.x as i32, point.y as i32))
+                    }
+                    CGEventType::ScrollWheel => {
+                        // CGEventField::scrollWheelEventPointDeltaAxis1 = 96
+                        let delta = CGEventGetIntegerValueField(cg_event, 96);
+                        if delta > 0 {
+                            Some(MouseEvent::Scroll(ScrollDirection::Up))
+                        } else {
+                            Some(MouseEvent::Scroll(ScrollDirection::Down))
+                        }
+                    }
+                    _ => None,
+                };
+
+                match (mouse_event, &mut CALLBACKS) {
+                    (Some(event), Some(callbacks)) => {
+                        for callback in callbacks.lock().unwrap().values() {
+                            callback(&event);
+                        }
+                    }
+                    _ => {}
+                }
+
+                cg_event
+            }
+
+            unsafe {
+                // Create the mouse listener hook
+                TAP_EVENT_REF = Some(CGEventTapCreate(
+                    CGEventTapLocation::CGHIDEventTap,
+                    CGEventTapPlacement::HeadInsertEventTap,
+                    CGEventTapOption::ListenOnly as u32,
+                    (1 << CGEventType::LeftMouseDown as u64)
+                        + (1 << CGEventType::LeftMouseUp as u64)
+                        + (1 << CGEventType::RightMouseDown as u64)
+                        + (1 << CGEventType::RightMouseUp as u64)
+                        + (1 << CGEventType::OtherMouseDown as u64)
+                        + (1 << CGEventType::OtherMouseUp as u64)
+                        + (1 << CGEventType::MouseMoved as u64)
+                        + (1 << CGEventType::ScrollWheel as u64),
+                    Some(mouse_on_event_callback),
+                    null_mut(),
+                ));
+
+                let loop_source =
+                    CFMachPortCreateRunLoopSource(null_mut(), TAP_EVENT_REF.unwrap(), 0);
+                let current_loop = CFRunLoopGetCurrent();
+                CFRunLoopAddSource(current_loop, loop_source, kCFRunLoopDefaultMode);
+                CGEventTapEnable(TAP_EVENT_REF.unwrap(), true);
+                CFRunLoopRun();
+            }
+        });
+
+        Ok(())
+    }
+}
+
+impl Drop for DarwinMouseManager {
+    fn drop(&mut self) {
+        unsafe {
+            match TAP_EVENT_REF {
+                Some(event_ref) => {
+                    // Release the tap event
+                    CFRelease(event_ref);
+                    TAP_EVENT_REF = None;
+                }
+                None => {}
+            }
+        }
     }
 }
 
@@ -113,6 +214,69 @@ impl MouseActions for DarwinMouseManager {
         };
         self.create_scroll_wheel_event(distance)
     }
+
+    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
+        if !self.is_listening {
+            self.start_listener()?;
+            self.is_listening = true;
+        }
+
+        let id = self.callback_counter;
+        unsafe {
+            match &mut CALLBACKS {
+                Some(callbacks) => {
+                    callbacks.lock().unwrap().insert(id, callback);
+                }
+                None => {
+                    initialize_callbacks();
+                    return self.hook(callback);
+                }
+            }
+        }
+        self.callback_counter += 1;
+        Ok(id)
+    }
+
+    fn unhook(&mut self, callback_id: CallbackId) -> Result<(), Error> {
+        unsafe {
+            match &mut CALLBACKS {
+                Some(callbacks) => match callbacks.lock().unwrap().remove(&callback_id) {
+                    Some(_) => Ok(()),
+                    None => Err(Error::UnhookFailed),
+                },
+                None => {
+                    initialize_callbacks();
+                    self.unhook(callback_id)
+                }
+            }
+        }
+    }
+
+    fn unhook_all(&mut self) -> Result<(), Error> {
+        unsafe {
+            match &mut CALLBACKS {
+                Some(callbacks) => {
+                    callbacks.lock().unwrap().clear();
+                }
+                None => {
+                    initialize_callbacks();
+                    return self.unhook_all();
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+fn initialize_callbacks() {
+    unsafe {
+        match CALLBACKS {
+            Some(_) => {}
+            None => {
+                CALLBACKS = Some(Mutex::new(HashMap::new()));
+            }
+        }
+    }
 }
 
 /// CoreGraphics type definitions
@@ -142,36 +306,63 @@ enum CGEvent {}
 type CGEventSourceRef = *mut CGEventSource;
 type CGEventRef = *mut CGEvent;
 type CFTypeRef = *const c_void;
+type CGEventMask = c_ulong;
+
 #[repr(C)]
 enum CGEventType {
     LeftMouseDown = 1,
     LeftMouseUp = 2,
     RightMouseDown = 3,
     RightMouseUp = 4,
+    MouseMoved = 5,
     _LeftMouseDragged = 6,
     _RightMouseDragged = 7,
-    _ScrollWheel = 22,
+    ScrollWheel = 22,
     OtherMouseDown = 25,
     OtherMouseUp = 26,
     _OtherMouseDragged = 27,
 }
+
 #[repr(C)]
 enum CGMouseButton {
     Left = 0,
     Right = 1,
     Center = 2,
 }
+
 #[repr(C)]
 enum CGEventTapLocation {
     CGHIDEventTap = 0,
     _CGSessionEventTap = 1,
     _CGAnnotatedSessionEventTap = 2,
 }
+
 #[repr(C)]
 enum CGScrollEventUnit {
     _Pixel = 0,
     Line = 1,
 }
+
+#[repr(C)]
+enum CGEventTapPlacement {
+    HeadInsertEventTap = 0,
+    _TailAppendEventTap = 1,
+}
+
+#[repr(C)]
+enum CGEventTapOption {
+    _Default = 0,
+    ListenOnly = 1,
+}
+
+type CGEventTapCallback = Option<
+    unsafe extern "C" fn(
+        proxy: *const c_void,
+        event_type: CGEventType,
+        cg_event: CGEventRef,
+        user_info: *mut c_void,
+    ) -> CGEventRef,
+>;
 
 #[link(name = "CoreGraphics", kind = "framework")]
 extern "C" {
@@ -191,8 +382,28 @@ extern "C" {
         wheel1: c_int,
     ) -> CGEventRef;
     fn CGEventPost(tap: CGEventTapLocation, event: CGEventRef);
+    fn CGEventTapCreate(
+        tap: CGEventTapLocation,
+        place: CGEventTapPlacement,
+        options: c_uint,
+        eventsOfInterest: CGEventMask,
+        callback: CGEventTapCallback,
+        refcon: *mut c_void,
+    ) -> CFTypeRef;
+    fn CGEventTapEnable(tap: *const c_void, enable: bool);
+    fn CGEventGetIntegerValueField(event: CGEventRef, field: c_uint) -> c_long;
 }
 #[link(name = "CoreFoundation", kind = "framework")]
 extern "C" {
+    static kCFRunLoopDefaultMode: *const c_void;
+
     fn CFRelease(cf: CFTypeRef);
+    fn CFMachPortCreateRunLoopSource(
+        allocator: *mut c_void,
+        tap: *const c_void,
+        order: c_ulong,
+    ) -> *mut c_void;
+    fn CFRunLoopGetCurrent() -> *mut c_void;
+    fn CFRunLoopAddSource(rl: *mut c_void, source: *mut c_void, mode: *const c_void);
+    fn CFRunLoopRun();
 }

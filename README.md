@@ -1,5 +1,5 @@
 # mouce
-Mouce is a library written in Rust that aims to help simulating mouse actions across different platforms.
+Mouce is a library written in Rust that aims to help simulating and listening mouse actions across different platforms.
 ## Supported platforms
 - **Windows** ✅
   - Tested on Windows 10
@@ -57,6 +57,10 @@ fn main() {
         thread::sleep(Duration::from_millis(2));
     }
 }
+```
+To see more examples, you can look at the documentation by running;
+```fish
+cargo doc --open
 ```
 ## CLI binary
 mouce comes with an example CLI program that uses mouce library functions.

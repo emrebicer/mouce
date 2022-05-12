@@ -1,3 +1,6 @@
+use std::time::Duration;
+use std::thread::sleep;
+
 #[cfg(feature = "cli")]
 use clap::{Arg, Command};
 
@@ -97,7 +100,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             mouse_manager.hook(Box::new(|event| {
                 println!("{:?}", event);
             }))?;
-            loop {}
+            loop {
+                // Call sleep to avoid heavy cpu load
+                sleep(Duration::from_secs(u64::max_value()));
+            }
         }
         _ => {
             panic!("unknown subcommand, please see mouce --help");

@@ -17,7 +17,7 @@ Mouce is a library written in Rust that aims to help simulating and listening mo
       - ```get_position``` function is not implemented as **uinput** does not provide such a feature
       - The rest of the actions work and tested on KDE Wayland and sway
 ## Library interface
-```Rust
+```rust
 /// Move the mouse to the given `x`, `y` coordinates
 fn move_to(&self, x: usize, y: usize) -> Result<(), Error>;
 /// Move the mouse relative to the current position
@@ -41,7 +41,7 @@ fn unhook_all(&mut self) -> Result<(), Error>;
 ```
 ## Example
 This example program moves the mouse from left to right;
-```Rust
+```rust
 use std::thread;
 use std::time::Duration;
 

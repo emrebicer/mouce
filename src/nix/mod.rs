@@ -29,7 +29,7 @@ impl NixMouseManager {
         // read the environment variable $XDG_SESSION_TYPE
         let output = Command::new("sh")
             .arg("-c")
-            .arg("loginctl show-session $(awk '/tty/ {print $1}' <(loginctl)) -p Type | awk -F= '{print $2}'")
+            .arg("loginctl show-session $(loginctl | awk '/tty/ {print $1}') -p Type | awk -F= '{print $2}'")
             .output()
             .unwrap_or(
                 Command::new("sh")

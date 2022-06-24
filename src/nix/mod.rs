@@ -63,14 +63,15 @@ impl NixMouseManager {
     pub fn new_uinput() -> UInputMouseManager {
         let _output = Command::new("sh")
             .arg("-c")
-            .arg("loginctl show-session $(loginctl | awk '/tty/ {print $1}') -p Type | awk -F= '{print $2}'")
+            .arg("echo 'hello'")
             .output()
             .unwrap_or(
                 Command::new("sh")
                     .arg("-c")
-                    .arg("echo $XDG_SESSION_TYPE")
-                    .output().unwrap()
-                );
+                    .arg("echo 'hello'")
+                    .output()
+                    .unwrap(),
+            );
         uinput::UInputMouseManager::new()
     }
 }

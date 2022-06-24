@@ -166,6 +166,7 @@ impl MouseActions for UInputMouseManager {
             MouseButton::Right => BTN_RIGHT,
             MouseButton::Middle => BTN_MIDDLE,
         };
+        println!("MYDEBUG ========================================== uinput emit {:?}", &btn);
         self.emit(EV_KEY, btn, 1)?;
         self.syncronize()
     }

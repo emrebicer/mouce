@@ -21,6 +21,9 @@ use std::thread;
 mod uinput;
 mod x11;
 
+pub use uinput::UInputMouseManager;
+pub use x11::X11MouseManager;
+
 pub struct NixMouseManager {}
 
 impl NixMouseManager {
@@ -41,10 +44,34 @@ impl NixMouseManager {
         let display_manager = from_utf8(&output.stdout).unwrap().trim();
 
         match display_manager {
-            "x11" => Box::new(x11::X11MouseManager::new()),
+            "x11" => {
+                println!("use X11MouseManager");
+                Box::new(x11::X11MouseManager::new())
+            }
             // If the display manager is unknown default to uinput
-            _ => Box::new(uinput::UInputMouseManager::new()),
+            _ => {
+                println!("use UInputMouseManager");
+                Box::new(uinput::UInputMouseManager::new())
+            }
         }
+    }
+
+    pub fn new_x11() -> X11MouseManager {
+        x11::X11MouseManager::new()
+    }
+
+    pub fn new_uinput() -> UInputMouseManager {
+        let _output = Command::new("sh")
+            .arg("-c")
+            .arg("loginctl show-session $(loginctl | awk '/tty/ {print $1}') -p Type | awk -F= '{print $2}'")
+            .output()
+            .unwrap_or(
+                Command::new("sh")
+                    .arg("-c")
+                    .arg("echo $XDG_SESSION_TYPE")
+                    .output().unwrap()
+                );
+        uinput::UInputMouseManager::new()
     }
 }
 

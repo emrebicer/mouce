@@ -166,7 +166,10 @@ impl MouseActions for UInputMouseManager {
             MouseButton::Right => BTN_RIGHT,
             MouseButton::Middle => BTN_MIDDLE,
         };
-        println!("MYDEBUG ========================================== uinput emit {:?}", &btn);
+        println!(
+            "MYDEBUG ========================================== uinput emit {:?}",
+            &btn
+        );
         self.emit(EV_KEY, btn, 1)?;
         self.syncronize()
     }
@@ -187,11 +190,13 @@ impl MouseActions for UInputMouseManager {
     }
 
     fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
-        let scroll_value = match direction {
-            ScrollDirection::Up => 1,
-            ScrollDirection::Down => -1,
+        let (code, scroll_value) = match direction {
+            ScrollDirection::Up => (REL_WHEEL, 1),
+            ScrollDirection::Down => (REL_WHEEL, -1),
+            ScrollDirection::Left => (REL_HWHEEL, 1),
+            ScrollDirection::Right => (REL_HWHEEL, -1),
         };
-        self.emit(EV_REL, REL_WHEEL as i32, scroll_value)?;
+        self.emit(EV_REL, code as i32, scroll_value)?;
         self.syncronize()
     }
 
@@ -232,6 +237,7 @@ pub const EV_KEY: c_int = 0x01;
 pub const EV_REL: c_int = 0x02;
 pub const REL_X: c_uint = 0x00;
 pub const REL_Y: c_uint = 0x01;
+pub const REL_HWHEEL: c_uint = 0x06;
 pub const REL_WHEEL: c_uint = 0x08;
 pub const BTN_LEFT: c_int = 0x110;
 pub const BTN_RIGHT: c_int = 0x111;

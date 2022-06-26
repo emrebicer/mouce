@@ -100,6 +100,8 @@ impl MouseActions for X11MouseManager {
         let btn = match direction {
             ScrollDirection::Up => 4,
             ScrollDirection::Down => 5,
+            ScrollDirection::Left => 6,
+            ScrollDirection::Right => 7,
         };
         unsafe {
             XTestFakeButtonEvent(self.display, btn, true, 0);

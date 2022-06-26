@@ -9,10 +9,32 @@ pub enum MouseButton {
     Right,
 }
 
+#[cfg(not(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd"
+)))]
 #[derive(Debug)]
 pub enum ScrollDirection {
     Up,
     Down,
+}
+
+#[cfg(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd"
+))]
+#[derive(Debug)]
+pub enum ScrollDirection {
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
 #[derive(Debug)]
@@ -260,8 +282,8 @@ mod tests {
                     assert_eq!(x, position.0 as i32);
                     assert_eq!(y, position.1 as i32);
                 }
-            },
-            Err(error) => assert_eq!(error, Error::NotImplemented)
+            }
+            Err(error) => assert_eq!(error, Error::NotImplemented),
         }
     }
 

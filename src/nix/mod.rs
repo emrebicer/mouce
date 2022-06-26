@@ -61,12 +61,12 @@ impl NixMouseManager {
     }
 
     pub fn new_uinput() -> UInputMouseManager {
-        let _output = Command::new("sh")
+        let _output = std::process::Command::new("sh")
             .arg("-c")
             .arg("echo 'hello'")
             .output()
             .unwrap_or(
-                Command::new("sh")
+                std::process::Command::new("sh")
                     .arg("-c")
                     .arg("echo 'hello'")
                     .output()

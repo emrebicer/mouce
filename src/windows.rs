@@ -80,6 +80,13 @@ impl WindowsMouseManager {
                             _ => Some(MouseEvent::Scroll(ScrollDirection::Down)),
                         }
                     }
+                    WM_MOUSEHWHEEL => {
+                        let delta = get_delta(lpdata) / WHEEL_DELTA as u16;
+                        match delta {
+                            1 => Some(MouseEvent::Scroll(ScrollDirection::Right)),
+                            _ => Some(MouseEvent::Scroll(ScrollDirection::Left)),
+                        }
+                    }
                     _ => None,
                 };
 
@@ -163,11 +170,13 @@ impl MouseActions for WindowsMouseManager {
     }
 
     fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
-        let scroll_amount = match direction {
-            ScrollDirection::Up => 150,
-            ScrollDirection::Down => -150,
+        let (event, scroll_amount) = match direction {
+            ScrollDirection::Up => (WindowsMouseEvent::Wheel, 150),
+            ScrollDirection::Down => (WindowsMouseEvent::Wheel, -150),
+            ScrollDirection::Right => (WindowsMouseEvent::HWheel, 150),
+            ScrollDirection::Left => (WindowsMouseEvent::HWheel, -150),
         };
-        self.send_input(WindowsMouseEvent::Wheel, scroll_amount)
+        self.send_input(event, scroll_amount)
     }
 
     fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
@@ -265,6 +274,7 @@ const WM_RBUTTONUP: c_uint = 0x0205;
 const WM_MBUTTONDOWN: c_uint = 0x0207;
 const WM_MBUTTONUP: c_uint = 0x0208;
 const WM_MOUSEWHEEL: c_uint = 0x020A;
+const WM_MOUSEHWHEEL: c_uint = 0x020E;
 const WHEEL_DELTA: c_short = 120;
 const WH_MOUSE_LL: c_int = 14;
 enum Hhook__ {}
@@ -300,6 +310,7 @@ enum WindowsMouseEvent {
     MiddleDown = 0x0020,
     MiddleUp = 0x0040,
     Wheel = 0x0800,
+    HWheel = 0x01000,
 }
 
 #[repr(C)]

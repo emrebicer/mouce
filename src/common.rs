@@ -10,6 +10,7 @@ pub enum MouseButton {
 }
 
 #[cfg(not(any(
+    target_os = "windows",
     target_os = "linux",
     target_os = "dragonfly",
     target_os = "freebsd",
@@ -23,6 +24,7 @@ pub enum ScrollDirection {
 }
 
 #[cfg(any(
+    target_os = "windows",
     target_os = "linux",
     target_os = "dragonfly",
     target_os = "freebsd",
@@ -311,6 +313,44 @@ mod tests {
         let manager = Mouse::new();
         for _ in 0..10 {
             assert_eq!(manager.scroll_wheel(&ScrollDirection::Up), Ok(()));
+            let sleep_duration = time::Duration::from_millis(250);
+            thread::sleep(sleep_duration);
+        }
+    }
+
+    #[cfg(any(
+        target_os = "windows",
+        target_os = "linux",
+        target_os = "dragonfly",
+        target_os = "freebsd",
+        target_os = "netbsd",
+        target_os = "openbsd"
+    ))]
+    #[test]
+    #[ignore]
+    fn scroll_left() {
+        let manager = Mouse::new();
+        for _ in 0..10 {
+            assert_eq!(manager.scroll_wheel(&ScrollDirection::Left), Ok(()));
+            let sleep_duration = time::Duration::from_millis(250);
+            thread::sleep(sleep_duration);
+        }
+    }
+
+    #[cfg(any(
+        target_os = "windows",
+        target_os = "linux",
+        target_os = "dragonfly",
+        target_os = "freebsd",
+        target_os = "netbsd",
+        target_os = "openbsd"
+    ))]
+    #[test]
+    #[ignore]
+    fn scroll_right() {
+        let manager = Mouse::new();
+        for _ in 0..10 {
+            assert_eq!(manager.scroll_wheel(&ScrollDirection::Right), Ok(()));
             let sleep_duration = time::Duration::from_millis(250);
             thread::sleep(sleep_duration);
         }

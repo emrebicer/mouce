@@ -193,8 +193,8 @@ impl MouseActions for UInputMouseManager {
         let (code, scroll_value) = match direction {
             ScrollDirection::Up => (REL_WHEEL, 1),
             ScrollDirection::Down => (REL_WHEEL, -1),
-            ScrollDirection::Left => (REL_HWHEEL, 1),
-            ScrollDirection::Right => (REL_HWHEEL, -1),
+            ScrollDirection::Left => (REL_HWHEEL, -1),
+            ScrollDirection::Right => (REL_HWHEEL, 1),
         };
         self.emit(EV_REL, code as i32, scroll_value)?;
         self.syncronize()

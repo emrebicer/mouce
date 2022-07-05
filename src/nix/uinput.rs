@@ -44,6 +44,40 @@ impl UInputMouseManager {
             ioctl(fd, UI_SET_KEYBIT, BTN_MIDDLE);
 
             // For mouse movement
+            ioctl(fd, UI_SET_EVBIT, EV_ABS);
+            ioctl(fd, UI_SET_ABSBIT, ABS_X);
+            ioctl(
+                fd,
+                UI_ABS_SETUP,
+                &UinputAbsSetup {
+                    code: ABS_X as _,
+                    absinfo: InputAbsinfo {
+                        value: 0,
+                        minimum: 0,
+                        maximum: 1920,
+                        fuzz: 0,
+                        flat: 0,
+                        resolution: 0,
+                    },
+                },
+            );
+            ioctl(fd, UI_SET_ABSBIT, ABS_Y);
+            ioctl(
+                fd,
+                UI_ABS_SETUP,
+                &UinputAbsSetup {
+                    code: ABS_Y as _,
+                    absinfo: InputAbsinfo {
+                        value: 0,
+                        minimum: 0,
+                        maximum: 1080,
+                        fuzz: 0,
+                        flat: 0,
+                        resolution: 0,
+                    },
+                },
+            );
+
             ioctl(fd, UI_SET_EVBIT, EV_REL);
             ioctl(fd, UI_SET_RELBIT, REL_X);
             ioctl(fd, UI_SET_RELBIT, REL_Y);
@@ -142,13 +176,17 @@ impl Drop for UInputMouseManager {
 
 impl MouseActions for UInputMouseManager {
     fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
-        // For some reason, absolute mouse move events are not working on uinput
-        // (as I understand those events are intended for touch events)
-        //
-        // As a work around solution; first set the mouse to top left, then
-        // call relative move function to simulate an absolute move event
-        self.move_relative(i32::MIN, i32::MIN)?;
-        self.move_relative(x as i32, y as i32)
+        // // For some reason, absolute mouse move events are not working on uinput
+        // // (as I understand those events are intended for touch events)
+        // //
+        // // As a work around solution; first set the mouse to top left, then
+        // // call relative move function to simulate an absolute move event
+        //self.move_relative(i32::MIN, i32::MIN)?;
+        //self.move_relative(x as i32, y as i32)
+
+        self.emit(EV_ABS, ABS_X as i32, x as i32)?;
+        self.emit(EV_ABS, ABS_Y as i32, y as i32)?;
+        self.syncronize()
     }
 
     fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
@@ -222,17 +260,22 @@ impl MouseActions for UInputMouseManager {
 }
 
 /// ioctl and uinput definitions
+const UI_ABS_SETUP: c_ulong = 1075598596;
 const UI_SET_EVBIT: c_ulong = 1074025828;
 const UI_SET_KEYBIT: c_ulong = 1074025829;
 const UI_SET_RELBIT: c_ulong = 1074025830;
+const UI_SET_ABSBIT: c_ulong = 1074025831;
 const UI_DEV_SETUP: c_ulong = 1079792899;
 const UI_DEV_CREATE: c_ulong = 21761;
 const UI_DEV_DESTROY: c_uint = 21762;
 
 pub const EV_KEY: c_int = 0x01;
 pub const EV_REL: c_int = 0x02;
+pub const EV_ABS: c_int = 0x03;
 pub const REL_X: c_uint = 0x00;
 pub const REL_Y: c_uint = 0x01;
+pub const ABS_X: c_uint = 0x00;
+pub const ABS_Y: c_uint = 0x01;
 pub const REL_HWHEEL: c_uint = 0x06;
 pub const REL_WHEEL: c_uint = 0x08;
 pub const BTN_LEFT: c_int = 0x110;
@@ -270,6 +313,22 @@ pub struct InputEvent {
 pub struct TimeVal {
     pub tv_sec: c_ulong,
     pub tv_usec: c_ulong,
+}
+
+#[repr(C)]
+pub struct UinputAbsSetup {
+    pub code: u16,
+    pub absinfo: InputAbsinfo,
+}
+
+#[repr(C)]
+pub struct InputAbsinfo {
+    pub value: i32,
+    pub minimum: i32,
+    pub maximum: i32,
+    pub fuzz: i32,
+    pub flat: i32,
+    pub resolution: i32,
 }
 
 extern "C" {

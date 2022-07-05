@@ -28,7 +28,9 @@ pub use x11::X11MouseManager;
 pub struct NixMouseManager {}
 
 impl NixMouseManager {
-    pub fn new() -> Box<dyn MouseActions> {
+    /// rng_x and rng_y is used by uinput mouse.
+    /// As for x11, the params can be (0, 0), (0, 0)
+    pub fn new(rng_x: (i32, i32), rng_y: (i32, i32)) -> Box<dyn MouseActions> {
         // Try to identify the display manager using loginctl, if it fails
         // read the environment variable $XDG_SESSION_TYPE
         let output = Command::new("sh")
@@ -52,7 +54,7 @@ impl NixMouseManager {
             // If the display manager is unknown default to uinput
             _ => {
                 println!("use UInputMouseManager");
-                Box::new(uinput::UInputMouseManager::new())
+                Box::new(uinput::UInputMouseManager::new(rng_x, rng_y))
             }
         }
     }
@@ -61,7 +63,7 @@ impl NixMouseManager {
         x11::X11MouseManager::new()
     }
 
-    pub fn new_uinput() -> UInputMouseManager {
+    pub fn new_uinput(rng_x: (i32, i32), rng_y: (i32, i32)) -> UInputMouseManager {
         let _output = std::process::Command::new("sh")
             .arg("-c")
             .arg("echo 'hello'")
@@ -73,7 +75,7 @@ impl NixMouseManager {
                     .output()
                     .unwrap(),
             );
-        uinput::UInputMouseManager::new()
+        uinput::UInputMouseManager::new(rng_x, rng_y)
     }
 }
 

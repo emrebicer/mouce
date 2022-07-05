@@ -25,7 +25,7 @@ pub struct UInputMouseManager {
 }
 
 impl UInputMouseManager {
-    pub fn new() -> Self {
+    pub fn new(rng_x: (i32, i32), rng_y: (i32, i32)) -> Self {
         let manager = UInputMouseManager {
             uinput_file: File::options()
                 .write(true)
@@ -53,8 +53,8 @@ impl UInputMouseManager {
                     code: ABS_X as _,
                     absinfo: InputAbsinfo {
                         value: 0,
-                        minimum: 0,
-                        maximum: 1920,
+                        minimum: rng_x.0,
+                        maximum: rng_x.1,
                         fuzz: 0,
                         flat: 0,
                         resolution: 0,
@@ -69,8 +69,8 @@ impl UInputMouseManager {
                     code: ABS_Y as _,
                     absinfo: InputAbsinfo {
                         value: 0,
-                        minimum: 0,
-                        maximum: 1080,
+                        minimum: rng_y.0,
+                        maximum: rng_y.1,
                         fuzz: 0,
                         flat: 0,
                         resolution: 0,

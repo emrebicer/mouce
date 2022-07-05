@@ -37,6 +37,21 @@ mod tests {
     #[test]
     fn supported_platform() {
         // Mouse should be visible if the current platform is supported
+        #[cfg(any(
+            target_os = "linux",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
+        ))]
+        Mouse::new((0, 1920), (0, 1080));
+        #[cfg(not(any(
+            target_os = "linux",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
+        )))]
         Mouse::new();
     }
 }

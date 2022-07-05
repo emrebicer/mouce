@@ -190,27 +190,52 @@ pub trait MouseActions {
 #[cfg(test)]
 mod tests {
     use crate::error::Error;
+    use crate::MouseActions;
     use crate::{common::MouseButton, common::ScrollDirection, Mouse};
     use std::{thread, time};
+
+    #[ignore]
+    #[cfg(any(
+        target_os = "linux",
+        target_os = "dragonfly",
+        target_os = "freebsd",
+        target_os = "netbsd",
+        target_os = "openbsd"
+    ))]
+    fn get_mouse_manager() -> Box<dyn MouseActions> {
+        Mouse::new((0, 1920), (0, 1080))
+    }
+
+    #[ignore]
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "dragonfly",
+        target_os = "freebsd",
+        target_os = "netbsd",
+        target_os = "openbsd"
+    )))]
+    fn get_mouse_manager() -> Box<dyn MouseActions> {
+        Mouse::new()
+    }
 
     #[test]
     #[ignore]
     fn move_to_right_bottom() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         assert_eq!(manager.move_to(1920, 1080), Ok(()));
     }
 
     #[test]
     #[ignore]
     fn move_to_top_left() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         assert_eq!(manager.move_to(0, 0), Ok(()));
     }
 
     #[test]
     #[ignore]
     fn move_to_left_to_right() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         let sleep_duration = time::Duration::from_millis(1);
         let mut x = 0;
         while x < 1920 {
@@ -223,7 +248,7 @@ mod tests {
     #[test]
     #[ignore]
     fn move_relative_left_to_right() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         let sleep_duration = time::Duration::from_millis(1);
         let mut x = 0;
         assert_eq!(manager.move_to(0, 540), Ok(()));
@@ -237,7 +262,7 @@ mod tests {
     #[test]
     #[ignore]
     fn move_to_top_to_bottom() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         let sleep_duration = time::Duration::from_millis(1);
         let mut y = 0;
         while y < 1080 {
@@ -250,7 +275,7 @@ mod tests {
     #[test]
     #[ignore]
     fn move_relative_top_to_bottom() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         let sleep_duration = time::Duration::from_millis(1);
         let mut y = 0;
         assert_eq!(manager.move_to(960, 0), Ok(()));
@@ -264,7 +289,7 @@ mod tests {
     #[test]
     #[ignore]
     fn get_position() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         match manager.get_position() {
             Ok(_) => {
                 let positions = vec![
@@ -292,14 +317,14 @@ mod tests {
     #[test]
     #[ignore]
     fn left_click() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         assert_eq!(manager.click_button(&MouseButton::Left), Ok(()));
     }
 
     #[test]
     #[ignore]
     fn scroll_down() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         for _ in 0..10 {
             assert_eq!(manager.scroll_wheel(&ScrollDirection::Down), Ok(()));
             let sleep_duration = time::Duration::from_millis(250);
@@ -310,7 +335,7 @@ mod tests {
     #[test]
     #[ignore]
     fn scroll_up() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         for _ in 0..10 {
             assert_eq!(manager.scroll_wheel(&ScrollDirection::Up), Ok(()));
             let sleep_duration = time::Duration::from_millis(250);
@@ -329,7 +354,7 @@ mod tests {
     #[test]
     #[ignore]
     fn scroll_left() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         for _ in 0..10 {
             assert_eq!(manager.scroll_wheel(&ScrollDirection::Left), Ok(()));
             let sleep_duration = time::Duration::from_millis(250);
@@ -348,7 +373,7 @@ mod tests {
     #[test]
     #[ignore]
     fn scroll_right() {
-        let manager = Mouse::new();
+        let manager = get_mouse_manager();
         for _ in 0..10 {
             assert_eq!(manager.scroll_wheel(&ScrollDirection::Right), Ok(()));
             let sleep_duration = time::Duration::from_millis(250);
@@ -359,7 +384,7 @@ mod tests {
     #[test]
     #[ignore]
     fn hook_and_unhook() {
-        let mut manager = Mouse::new();
+        let mut manager = get_mouse_manager();
         assert_eq!(manager.unhook(5), Err(Error::UnhookFailed));
         let hook_result = manager.hook(Box::new(|e| println!("{:?}", e)));
         match hook_result {

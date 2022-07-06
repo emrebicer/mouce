@@ -1,22 +1,24 @@
 ///
 /// This module contains the mouse action functions
-/// for the linux systems that uses uinput
+/// for the li&nux systems that uses uinput
 ///
 /// - Unsupported mouse actions
 ///     - get_position is not available on uinput
 ///
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
-use crate::error::Error;
-use std::collections::HashMap;
-use std::ffi::CString;
-use std::fs::File;
-use std::io::{self, Write};
-use std::mem::size_of;
-use std::os::raw::{c_int, c_long, c_uint, c_ulong, c_ushort};
-use std::os::unix::prelude::AsRawFd;
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
+use std::{
+    collections::HashMap,
+    ffi::CString,
+    fs::File,
+    io::{Error, ErrorKind, Result, Write},
+    os::{
+        raw::{c_int, c_uint, c_ulong, c_ushort},
+        unix::prelude::AsRawFd,
+    },
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
+};
 
 pub struct UInputMouseManager {
     uinput_file: File,
@@ -112,14 +114,14 @@ impl UInputMouseManager {
     }
 
     #[inline]
-    fn write_raw(&mut self, messages: &[InputEvent]) -> io::Result<()> {
+    fn write_raw(&mut self, messages: &[InputEvent]) -> Result<()> {
         let bytes = unsafe { crate::cast_to_bytes(messages) };
         self.uinput_file.write_all(bytes)
     }
 
     /// Write the given event to the uinput file
-    fn emit(&mut self, r#type: c_int, code: c_int, value: c_int) -> io::Result<()> {
-        let mut event = InputEvent {
+    fn emit(&mut self, r#type: c_int, code: c_int, value: c_int) -> Result<()> {
+        let event = InputEvent {
             time: TimeVal {
                 tv_sec: 0,
                 tv_usec: 0,
@@ -128,46 +130,11 @@ impl UInputMouseManager {
             code: code as u16,
             value,
         };
-        // self.write_raw(&[event])
-        let fd = self.uinput_file.as_raw_fd();
-
-        unsafe {
-            let count = size_of::<InputEvent>();
-            let written_bytes = write(fd, &mut event, count);
-            if written_bytes == -1 {
-                println!(
-                    "WriteFailed: written_bytes == -1, type: {}, code: {}, value: {}",
-                    r#type, code, value
-                );
-                //return Err(Error::WriteFailed);
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    format!(
-                        "WriteFailed: written_bytes == -1, type: {}, code: {}, value: {}",
-                        r#type, code, value
-                    ),
-                ));
-            } else if written_bytes != count as c_long {
-                println!(
-                    "WriteFailed: {} != {}, , type: {}, code: {}, value: {}",
-                    written_bytes, count, r#type, code, value
-                );
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    format!(
-                        "WriteFailed: {} != {}, , type: {}, code: {}, value: {}",
-                        written_bytes, count, r#type, code, value
-                    ),
-                ));
-                //return Err(Error::WriteFailed);
-            }
-        }
-
-        Ok(())
+        self.write_raw(&[event])
     }
 
     /// Syncronize the device
-    fn syncronize(&mut self) -> io::Result<()> {
+    fn syncronize(&mut self) -> Result<()> {
         self.emit(EV_SYN, SYN_REPORT, 0)?;
         // Give uinput some time to update the mouse location,
         // otherwise it fails to move the mouse on release mode
@@ -177,7 +144,7 @@ impl UInputMouseManager {
     }
 
     /// Move the mouse relative to the current position
-    fn move_relative(&mut self, x: i32, y: i32) -> io::Result<()> {
+    fn move_relative(&mut self, x: i32, y: i32) -> Result<()> {
         // uinput does not move the mouse in pixels but uses `units`. I couldn't
         // find information regarding to this uinput `unit`, but according to
         // my findings 1 unit corresponds to exactly 2 pixels.
@@ -205,7 +172,7 @@ impl Drop for UInputMouseManager {
 }
 
 impl MouseActions for UInputMouseManager {
-    fn move_to(&mut self, x: usize, y: usize) -> io::Result<()> {
+    fn move_to(&mut self, x: usize, y: usize) -> Result<()> {
         // // For some reason, absolute mouse move events are not working on uinput
         // // (as I understand those events are intended for touch events)
         // //
@@ -219,17 +186,17 @@ impl MouseActions for UInputMouseManager {
         self.syncronize()
     }
 
-    fn move_relative(&mut self, x_offset: i32, y_offset: i32) -> io::Result<()> {
+    fn move_relative(&mut self, x_offset: i32, y_offset: i32) -> Result<()> {
         self.move_relative(x_offset, y_offset)
     }
 
-    fn get_position(&self) -> io::Result<(i32, i32)> {
+    fn get_position(&self) -> Result<(i32, i32)> {
         // uinput does not let us get the current position of the mouse
         // Err(Error::NotImplemented)
         unimplemented!()
     }
 
-    fn press_button(&mut self, button: &MouseButton) -> io::Result<()> {
+    fn press_button(&mut self, button: &MouseButton) -> Result<()> {
         let btn = match button {
             MouseButton::Left => BTN_LEFT,
             MouseButton::Right => BTN_RIGHT,
@@ -239,7 +206,7 @@ impl MouseActions for UInputMouseManager {
         self.syncronize()
     }
 
-    fn release_button(&mut self, button: &MouseButton) -> io::Result<()> {
+    fn release_button(&mut self, button: &MouseButton) -> Result<()> {
         let btn = match button {
             MouseButton::Left => BTN_LEFT,
             MouseButton::Right => BTN_RIGHT,
@@ -249,12 +216,12 @@ impl MouseActions for UInputMouseManager {
         self.syncronize()
     }
 
-    fn click_button(&mut self, button: &MouseButton) -> io::Result<()> {
+    fn click_button(&mut self, button: &MouseButton) -> Result<()> {
         self.press_button(&button)?;
         self.release_button(&button)
     }
 
-    fn scroll_wheel(&mut self, direction: &ScrollDirection) -> io::Result<()> {
+    fn scroll_wheel(&mut self, direction: &ScrollDirection) -> Result<()> {
         let (code, scroll_value) = match direction {
             ScrollDirection::Up => (REL_WHEEL, 1),
             ScrollDirection::Down => (REL_WHEEL, -1),
@@ -265,7 +232,7 @@ impl MouseActions for UInputMouseManager {
         self.syncronize()
     }
 
-    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
+    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId> {
         if !self.is_listening {
             super::start_nix_listener(&self.callbacks)?;
             self.is_listening = true;
@@ -277,14 +244,17 @@ impl MouseActions for UInputMouseManager {
         Ok(id)
     }
 
-    fn unhook(&mut self, callback_id: CallbackId) -> Result<(), Error> {
+    fn unhook(&mut self, callback_id: CallbackId) -> Result<()> {
         match self.callbacks.lock().unwrap().remove(&callback_id) {
             Some(_) => Ok(()),
-            None => Err(Error::UnhookFailed),
+            None => Err(Error::new(
+                ErrorKind::NotFound,
+                format!("callback id {} not found", callback_id),
+            )),
         }
     }
 
-    fn unhook_all(&mut self) -> Result<(), Error> {
+    fn unhook_all(&mut self) -> Result<()> {
         self.callbacks.lock().unwrap().clear();
         Ok(())
     }
@@ -364,5 +334,4 @@ pub struct InputAbsinfo {
 
 extern "C" {
     fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;
-    fn write(fd: c_int, buf: *mut InputEvent, count: usize) -> c_long;
 }

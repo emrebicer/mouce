@@ -1,15 +1,19 @@
+// FIXME: This file is not compiled.
+
 ///
 /// This module contains the mouse action functions
 /// for the darwin systems (MacOS)
 /// Uses the CoreGraphics (a.k.a Quartz) framework
 ///
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
-use crate::error::Error;
-use std::collections::HashMap;
-use std::os::raw::{c_double, c_int, c_long, c_uint, c_ulong, c_void};
-use std::ptr::null_mut;
-use std::sync::Mutex;
-use std::thread;
+use std::{
+    collections::HashMap,
+    io::{Error, ErrorKind, Result},
+    os::raw::{c_double, c_int, c_long, c_uint, c_ulong, c_void},
+    ptr::null_mut,
+    sync::Mutex,
+    thread,
+};
 
 static mut TAP_EVENT_REF: Option<CFTypeRef> = None;
 static mut CALLBACKS: Option<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>> = None;
@@ -31,7 +35,7 @@ impl DarwinMouseManager {
         &self,
         event_type: CGEventType,
         mouse_button: CGMouseButton,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let (pos_x, pos_y) = self.get_position()?;
         let position = CGPoint {
             x: pos_x as c_double,
@@ -41,7 +45,7 @@ impl DarwinMouseManager {
         unsafe {
             let event = CGEventCreateMouseEvent(null_mut(), event_type, position, mouse_button);
             if event == null_mut() {
-                return Err(Error::CGCouldNotCreateEvent);
+                return Err(Error::new(ErrorKind::Other, "CGCouldNotCreateEvent"));
             }
             CGEventPost(CGEventTapLocation::CGHIDEventTap, event);
             CFRelease(event as CFTypeRef);
@@ -50,7 +54,7 @@ impl DarwinMouseManager {
         Ok(())
     }
 
-    fn create_scroll_wheel_event(&self, distance: c_int) -> Result<(), Error> {
+    fn create_scroll_wheel_event(&self, distance: c_int) -> Result<()> {
         unsafe {
             let event =
                 CGEventCreateScrollWheelEvent(null_mut(), CGScrollEventUnit::Line, 1, distance);
@@ -63,7 +67,7 @@ impl DarwinMouseManager {
         Ok(())
     }
 
-    fn start_listener(&mut self) -> Result<(), Error> {
+    fn start_listener(&mut self) -> Result<()> {
         thread::spawn(move || {
             unsafe extern "C" fn mouse_on_event_callback(
                 _proxy: *const c_void,
@@ -154,7 +158,7 @@ impl Drop for DarwinMouseManager {
 }
 
 impl MouseActions for DarwinMouseManager {
-    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
+    fn move_to(&self, x: usize, y: usize) -> Result<()> {
         let cg_point = CGPoint {
             x: x as f64,
             y: y as f64,
@@ -162,7 +166,8 @@ impl MouseActions for DarwinMouseManager {
         unsafe {
             let result = CGWarpMouseCursorPosition(cg_point);
             if result != CGError::Success {
-                return Err(Error::CustomError(
+                return Err(Error::form(
+                    ErrorKind::Other,
                     "Failed to move the mouse, CGError is not Success",
                 ));
             }
@@ -171,11 +176,11 @@ impl MouseActions for DarwinMouseManager {
         Ok(())
     }
 
-    fn get_position(&self) -> Result<(i32, i32), Error> {
+    fn get_position(&self) -> Result<(i32, i32)> {
         unsafe {
             let event = CGEventCreate(null_mut());
             if event == null_mut() {
-                return Err(Error::CGCouldNotCreateEvent);
+                return Err(Error::form(ErrorKind::Other, "CGCouldNotCreateEvent"));
             }
             let cursor = CGEventGetLocation(event);
             CFRelease(event as CFTypeRef);
@@ -183,7 +188,7 @@ impl MouseActions for DarwinMouseManager {
         }
     }
 
-    fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn press_button(&self, button: &MouseButton) -> Result<()> {
         let (event_type, mouse_button) = match button {
             MouseButton::Left => (CGEventType::LeftMouseDown, CGMouseButton::Left),
             MouseButton::Middle => (CGEventType::OtherMouseDown, CGMouseButton::Center),
@@ -193,7 +198,7 @@ impl MouseActions for DarwinMouseManager {
         Ok(())
     }
 
-    fn release_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn release_button(&self, button: &MouseButton) -> Result<()> {
         let (event_type, mouse_button) = match button {
             MouseButton::Left => (CGEventType::LeftMouseUp, CGMouseButton::Left),
             MouseButton::Middle => (CGEventType::OtherMouseUp, CGMouseButton::Center),
@@ -202,12 +207,12 @@ impl MouseActions for DarwinMouseManager {
         self.create_mouse_event(event_type, mouse_button)
     }
 
-    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn click_button(&self, button: &MouseButton) -> Result<()> {
         self.press_button(button)?;
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
+    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<()> {
         let distance = match direction {
             ScrollDirection::Up => 5,
             ScrollDirection::Down => -5,
@@ -215,7 +220,7 @@ impl MouseActions for DarwinMouseManager {
         self.create_scroll_wheel_event(distance)
     }
 
-    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
+    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId> {
         if !self.is_listening {
             self.start_listener()?;
             self.is_listening = true;
@@ -237,12 +242,15 @@ impl MouseActions for DarwinMouseManager {
         Ok(id)
     }
 
-    fn unhook(&mut self, callback_id: CallbackId) -> Result<(), Error> {
+    fn unhook(&mut self, callback_id: CallbackId) -> Result<()> {
         unsafe {
             match &mut CALLBACKS {
                 Some(callbacks) => match callbacks.lock().unwrap().remove(&callback_id) {
                     Some(_) => Ok(()),
-                    None => Err(Error::UnhookFailed),
+                    None => Err(Error::new(
+                        ErrorKind::NotFound,
+                        format!("callback id {} not found", callback_id),
+                    )),
                 },
                 None => {
                     initialize_callbacks();
@@ -252,7 +260,7 @@ impl MouseActions for DarwinMouseManager {
         }
     }
 
-    fn unhook_all(&mut self) -> Result<(), Error> {
+    fn unhook_all(&mut self) -> Result<()> {
         unsafe {
             match &mut CALLBACKS {
                 Some(callbacks) => {

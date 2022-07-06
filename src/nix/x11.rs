@@ -3,11 +3,12 @@
 /// for the unix-like systems that use X11
 ///
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
-use crate::error::Error;
-use std::collections::HashMap;
-use std::os::raw::{c_char, c_int, c_uint, c_ulong};
-use std::sync::{Arc, Mutex};
-use std::io;
+use std::{
+    collections::HashMap,
+    io::{Error, ErrorKind, Result},
+    os::raw::{c_char, c_int, c_uint, c_ulong},
+    sync::{Arc, Mutex},
+};
 
 pub struct X11MouseManager {
     display: *mut Display,
@@ -32,7 +33,7 @@ impl X11MouseManager {
         }
     }
 
-    fn button_event(&self, button: &MouseButton, is_press: bool) -> io::Result<()> {
+    fn button_event(&self, button: &MouseButton, is_press: bool) -> Result<()> {
         let btn = match button {
             MouseButton::Left => 1,
             MouseButton::Middle => 2,
@@ -47,7 +48,7 @@ impl X11MouseManager {
 }
 
 impl MouseActions for X11MouseManager {
-    fn move_to(&mut self, x: usize, y: usize) -> io::Result<()> {
+    fn move_to(&mut self, x: usize, y: usize) -> Result<()> {
         unsafe {
             XWarpPointer(self.display, 0, self.window, 0, 0, 0, 0, x as i32, y as i32);
             XFlush(self.display);
@@ -55,7 +56,7 @@ impl MouseActions for X11MouseManager {
         Ok(())
     }
 
-    fn get_position(&self) ->io::Result<(i32, i32)> {
+    fn get_position(&self) -> Result<(i32, i32)> {
         let mut x = 0;
         let mut y = 0;
         let mut void = 0;
@@ -77,28 +78,27 @@ impl MouseActions for X11MouseManager {
             // If XQueryPointer returns False (which is an enum value that corresponds to 0)
             // that means the pointer is not on the same screen as the specified window
             if out == 0 {
-                // return Err(Error::X11PointerWindowMismatch);
-                return Err(io::Error::new(io::ErrorKind::Other, "X11PointerWindowMismatch"));
+                return Err(Error::new(ErrorKind::NotFound, "X11PointerWindowMismatch"));
             }
         }
 
         Ok((x, y))
     }
 
-    fn press_button(&mut self, button: &MouseButton) -> io::Result<()> {
+    fn press_button(&mut self, button: &MouseButton) -> Result<()> {
         self.button_event(button, true)
     }
 
-    fn release_button(&mut self, button: &MouseButton) ->io::Result<()> {
+    fn release_button(&mut self, button: &MouseButton) -> Result<()> {
         self.button_event(button, false)
     }
 
-    fn click_button(&mut self, button: &MouseButton) -> io::Result<()> {
+    fn click_button(&mut self, button: &MouseButton) -> Result<()> {
         self.press_button(button)?;
         self.release_button(button)
     }
 
-    fn scroll_wheel(&mut self, direction: &ScrollDirection) -> io::Result<()> {
+    fn scroll_wheel(&mut self, direction: &ScrollDirection) -> Result<()> {
         let btn = match direction {
             ScrollDirection::Up => 4,
             ScrollDirection::Down => 5,
@@ -113,7 +113,7 @@ impl MouseActions for X11MouseManager {
         Ok(())
     }
 
-    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
+    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId> {
         if !self.is_listening {
             super::start_nix_listener(&self.callbacks)?;
             self.is_listening = true;
@@ -125,14 +125,17 @@ impl MouseActions for X11MouseManager {
         Ok(id)
     }
 
-    fn unhook(&mut self, callback_id: CallbackId) -> Result<(), Error> {
+    fn unhook(&mut self, callback_id: CallbackId) -> Result<()> {
         match self.callbacks.lock().unwrap().remove(&callback_id) {
             Some(_) => Ok(()),
-            None => Err(Error::UnhookFailed),
+            None => Err(Error::new(
+                ErrorKind::NotFound,
+                format!("callback id {} not found", callback_id),
+            )),
         }
     }
 
-    fn unhook_all(&mut self) -> Result<(), Error> {
+    fn unhook_all(&mut self) -> Result<()> {
         self.callbacks.lock().unwrap().clear();
         Ok(())
     }

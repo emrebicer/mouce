@@ -4,13 +4,15 @@
 /// Uses the User32 system library
 ///
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
-use crate::error::Error;
-use std::collections::HashMap;
-use std::mem::size_of;
-use std::os::raw::{c_int, c_long, c_short, c_uint, c_ulong, c_ushort};
-use std::ptr::null_mut;
-use std::sync::Mutex;
-use std::thread;
+use std::{
+    collections::HashMap,
+    io::{Error, ErrorKind, Result},
+    mem::size_of,
+    os::raw::{c_int, c_long, c_short, c_uint, c_ulong, c_ushort},
+    ptr::null_mut,
+    sync::Mutex,
+    thread,
+};
 
 static mut HOOK: HHook = null_mut();
 static mut CALLBACKS: Option<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>> = None;
@@ -28,7 +30,7 @@ impl WindowsMouseManager {
         })
     }
 
-    fn send_input(&self, event: WindowsMouseEvent, mouse_data: i32) -> Result<(), Error> {
+    fn send_input(&self, event: WindowsMouseEvent, mouse_data: i32) -> Result<()> {
         let (x, y) = self.get_position()?;
         let mut input = Input {
             r#type: INPUT_MOUSE,
@@ -46,13 +48,13 @@ impl WindowsMouseManager {
             let result = SendInput(1, &mut input, size_of::<Input>() as i32);
             // If the function returns 0, it means the input was blocked by another thread
             if result == 0 {
-                return Err(Error::InputIsBlocked);
+                return Err(Error::from(ErrorKind::WouldBlock));
             }
         }
         Ok(())
     }
 
-    fn start_listener(&mut self) -> Result<(), Error> {
+    fn start_listener(&mut self) -> Result<()> {
         thread::spawn(move || {
             unsafe extern "system" fn low_level_mouse_handler(
                 code: c_int,
@@ -123,28 +125,34 @@ impl Drop for WindowsMouseManager {
 }
 
 impl MouseActions for WindowsMouseManager {
-    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
+    fn move_to(&self, x: usize, y: usize) -> Result<()> {
         unsafe {
             let result = SetCursorPos(x as c_int, y as c_int);
             if result == 0 {
-                return Err(Error::CustomError("failed to set the cursor position"));
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    "failed to set the cursor position",
+                ));
             }
         }
         Ok(())
     }
 
-    fn get_position(&self) -> Result<(i32, i32), Error> {
+    fn get_position(&self) -> Result<(i32, i32)> {
         let mut out = Point { x: 0, y: 0 };
         unsafe {
             let result = GetCursorPos(&mut out);
             if result == 0 {
-                return Err(Error::CustomError("failed to get the cursor position"));
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    "failed to get the cursor position",
+                ));
             }
         }
         return Ok((out.x, out.y));
     }
 
-    fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn press_button(&self, button: &MouseButton) -> Result<()> {
         let event = match button {
             MouseButton::Left => WindowsMouseEvent::LeftDown,
             MouseButton::Middle => WindowsMouseEvent::MiddleDown,
@@ -154,7 +162,7 @@ impl MouseActions for WindowsMouseManager {
         self.send_input(event, 0)
     }
 
-    fn release_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn release_button(&self, button: &MouseButton) -> Result<()> {
         let event = match button {
             MouseButton::Left => WindowsMouseEvent::LeftUp,
             MouseButton::Middle => WindowsMouseEvent::MiddleUp,
@@ -164,12 +172,12 @@ impl MouseActions for WindowsMouseManager {
         self.send_input(event, 0)
     }
 
-    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn click_button(&self, button: &MouseButton) -> Result<()> {
         self.press_button(button)?;
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
+    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<()> {
         let (event, scroll_amount) = match direction {
             ScrollDirection::Up => (WindowsMouseEvent::Wheel, 150),
             ScrollDirection::Down => (WindowsMouseEvent::Wheel, -150),
@@ -179,7 +187,7 @@ impl MouseActions for WindowsMouseManager {
         self.send_input(event, scroll_amount)
     }
 
-    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
+    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId> {
         if !self.is_listening {
             self.start_listener()?;
             self.is_listening = true;
@@ -201,12 +209,15 @@ impl MouseActions for WindowsMouseManager {
         Ok(id)
     }
 
-    fn unhook(&mut self, callback_id: CallbackId) -> Result<(), Error> {
+    fn unhook(&mut self, callback_id: CallbackId) -> Result<()> {
         unsafe {
             match &mut CALLBACKS {
                 Some(callbacks) => match callbacks.lock().unwrap().remove(&callback_id) {
                     Some(_) => Ok(()),
-                    None => Err(Error::UnhookFailed),
+                    None => Err(Error::new(
+                        ErrorKind::NotFound,
+                        format!("callback id {} not found", callback_id),
+                    )),
                 },
                 None => {
                     initialize_callbacks();
@@ -216,7 +227,7 @@ impl MouseActions for WindowsMouseManager {
         }
     }
 
-    fn unhook_all(&mut self) -> Result<(), Error> {
+    fn unhook_all(&mut self) -> Result<()> {
         unsafe {
             match &mut CALLBACKS {
                 Some(callbacks) => {

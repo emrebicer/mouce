@@ -3,21 +3,22 @@
 /// for the unix-like systems
 ///
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
-use crate::error::Error;
 use crate::nix::uinput::{
     InputEvent, TimeVal, BTN_LEFT, BTN_MIDDLE, BTN_RIGHT, EV_KEY, EV_REL, REL_HWHEEL, REL_WHEEL,
     REL_X, REL_Y,
 };
 use glob::glob;
-use std::collections::HashMap;
-use std::fs::File;
-use std::mem::size_of;
-use std::os::unix::io::AsRawFd;
-use std::process::Command;
-use std::str::from_utf8;
-use std::sync::mpsc;
-use std::sync::{Arc, Mutex};
-use std::thread;
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::Result,
+    mem::size_of,
+    os::unix::io::AsRawFd,
+    process::Command,
+    str::from_utf8,
+    sync::{mpsc, Arc, Mutex},
+    thread,
+};
 
 mod uinput;
 mod x11;
@@ -71,7 +72,7 @@ impl NixMouseManager {
 /// Start the event listener for nix systems
 fn start_nix_listener(
     callbacks: &Arc<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>>,
-) -> Result<(), Error> {
+) -> Result<()> {
     let (tx, rx) = mpsc::channel();
 
     // Read all the mouse events listed under /dev/input/by-id
@@ -83,10 +84,7 @@ fn start_nix_listener(
             .display()
             .to_string();
 
-        let event = match File::options().read(true).open(path) {
-            Ok(file) => file,
-            Err(_) => return Err(Error::PermissionDenied),
-        };
+        let event = File::options().read(true).open(path)?;
 
         // Create a thread for this mouse-event file
         let tx = tx.clone();

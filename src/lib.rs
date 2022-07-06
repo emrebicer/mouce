@@ -30,6 +30,11 @@ pub mod error;
 
 pub use common::MouseActions;
 
+/// SAFETY: T must not have any padding or otherwise uninitialized bytes inside of it
+pub(crate) unsafe fn cast_to_bytes<T: ?Sized>(mem: &T) -> &[u8] {
+    std::slice::from_raw_parts(mem as *const T as *const u8, std::mem::size_of_val(mem))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Mouse;

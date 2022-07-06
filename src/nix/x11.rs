@@ -7,6 +7,7 @@ use crate::error::Error;
 use std::collections::HashMap;
 use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 use std::sync::{Arc, Mutex};
+use std::io;
 
 pub struct X11MouseManager {
     display: *mut Display,
@@ -31,7 +32,7 @@ impl X11MouseManager {
         }
     }
 
-    fn button_event(&self, button: &MouseButton, is_press: bool) -> Result<(), Error> {
+    fn button_event(&self, button: &MouseButton, is_press: bool) -> io::Result<()> {
         let btn = match button {
             MouseButton::Left => 1,
             MouseButton::Middle => 2,
@@ -46,7 +47,7 @@ impl X11MouseManager {
 }
 
 impl MouseActions for X11MouseManager {
-    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
+    fn move_to(&mut self, x: usize, y: usize) -> io::Result<()> {
         unsafe {
             XWarpPointer(self.display, 0, self.window, 0, 0, 0, 0, x as i32, y as i32);
             XFlush(self.display);
@@ -54,7 +55,7 @@ impl MouseActions for X11MouseManager {
         Ok(())
     }
 
-    fn get_position(&self) -> Result<(i32, i32), Error> {
+    fn get_position(&self) ->io::Result<(i32, i32)> {
         let mut x = 0;
         let mut y = 0;
         let mut void = 0;
@@ -76,27 +77,28 @@ impl MouseActions for X11MouseManager {
             // If XQueryPointer returns False (which is an enum value that corresponds to 0)
             // that means the pointer is not on the same screen as the specified window
             if out == 0 {
-                return Err(Error::X11PointerWindowMismatch);
+                // return Err(Error::X11PointerWindowMismatch);
+                return Err(io::Error::new(io::ErrorKind::Other, "X11PointerWindowMismatch"));
             }
         }
 
         Ok((x, y))
     }
 
-    fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn press_button(&mut self, button: &MouseButton) -> io::Result<()> {
         self.button_event(button, true)
     }
 
-    fn release_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn release_button(&mut self, button: &MouseButton) ->io::Result<()> {
         self.button_event(button, false)
     }
 
-    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn click_button(&mut self, button: &MouseButton) -> io::Result<()> {
         self.press_button(button)?;
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
+    fn scroll_wheel(&mut self, direction: &ScrollDirection) -> io::Result<()> {
         let btn = match direction {
             ScrollDirection::Up => 4,
             ScrollDirection::Down => 5,

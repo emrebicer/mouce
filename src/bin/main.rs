@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .about("Listen mouse events and print them to the terminal")
         );
 
-    let mut mouse_manager = mouce::Mouse::new();
+    let mut mouse_manager = mouce::Mouse::new((0, 1920), (0, 1080));
     let matches = app.get_matches();
 
     match matches.subcommand() {

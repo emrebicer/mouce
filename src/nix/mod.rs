@@ -64,17 +64,6 @@ impl NixMouseManager {
     }
 
     pub fn new_uinput(rng_x: (i32, i32), rng_y: (i32, i32)) -> UInputMouseManager {
-        let _output = std::process::Command::new("sh")
-            .arg("-c")
-            .arg("echo 'hello'")
-            .output()
-            .unwrap_or(
-                std::process::Command::new("sh")
-                    .arg("-c")
-                    .arg("echo 'hello'")
-                    .output()
-                    .unwrap(),
-            );
         uinput::UInputMouseManager::new(rng_x, rng_y)
     }
 }

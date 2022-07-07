@@ -344,7 +344,7 @@ struct MSLLHookStruct {
     dw_extra_info: usize,
 }
 
-/// User32 function definitions
+// User32 function definitions
 #[link(name = "user32")]
 extern "system" {
     fn SetCursorPos(x: c_int, y: c_int) -> c_int;

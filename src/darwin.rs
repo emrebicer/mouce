@@ -24,11 +24,11 @@ pub struct DarwinMouseManager {
 }
 
 impl DarwinMouseManager {
-    pub fn new() -> Box<dyn MouseActions> {
-        Box::new(DarwinMouseManager {
+    pub fn new() -> Result<Box<dyn MouseActions>> {
+        Ok(Box::new(DarwinMouseManager {
             callback_counter: 0,
             is_listening: false,
-        })
+        }))
     }
 
     fn create_mouse_event(

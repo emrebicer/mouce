@@ -31,7 +31,7 @@ pub struct NixMouseManager {}
 impl NixMouseManager {
     /// rng_x and rng_y is used by uinput mouse.
     /// As for x11, the params can be (0, 0), (0, 0)
-    pub fn new(rng_x: (i32, i32), rng_y: (i32, i32)) -> Box<dyn MouseActions> {
+    pub fn new(rng_x: (i32, i32), rng_y: (i32, i32)) -> Result<Box<dyn MouseActions>> {
         // Try to identify the display manager using loginctl, if it fails
         // read the environment variable $XDG_SESSION_TYPE
         let output = Command::new("sh")
@@ -48,15 +48,9 @@ impl NixMouseManager {
         let display_manager = from_utf8(&output.stdout).unwrap().trim();
 
         match display_manager {
-            "x11" => {
-                println!("use X11MouseManager");
-                Box::new(x11::X11MouseManager::new())
-            }
+            "x11" => Ok(Box::new(x11::X11MouseManager::new())),
             // If the display manager is unknown default to uinput
-            _ => {
-                println!("use UInputMouseManager");
-                Box::new(uinput::UInputMouseManager::new(rng_x, rng_y))
-            }
+            _ => Ok(Box::new(uinput::UInputMouseManager::new(rng_x, rng_y)?)),
         }
     }
 
@@ -64,8 +58,8 @@ impl NixMouseManager {
         x11::X11MouseManager::new()
     }
 
-    pub fn new_uinput(rng_x: (i32, i32), rng_y: (i32, i32)) -> UInputMouseManager {
-        uinput::UInputMouseManager::new(rng_x, rng_y)
+    pub fn new_uinput(rng_x: (i32, i32), rng_y: (i32, i32)) -> Result<UInputMouseManager> {
+        Ok(uinput::UInputMouseManager::new(rng_x, rng_y)?)
     }
 }
 

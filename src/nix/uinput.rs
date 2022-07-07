@@ -13,7 +13,7 @@ use std::{
     io::{Error, ErrorKind, Result, Write},
     os::{
         raw::{c_int, c_uint, c_ulong, c_ushort},
-        unix::prelude::AsRawFd,
+        unix::{fs::OpenOptionsExt, io::AsRawFd},
     },
     sync::{Arc, Mutex},
     thread,
@@ -28,12 +28,12 @@ pub struct UInputMouseManager {
 }
 
 impl UInputMouseManager {
-    pub fn new(rng_x: (i32, i32), rng_y: (i32, i32)) -> Self {
+    pub fn new(rng_x: (i32, i32), rng_y: (i32, i32)) -> Result<Self> {
         let manager = UInputMouseManager {
             uinput_file: File::options()
                 .write(true)
-                .open("/dev/uinput")
-                .expect("uinput file can not be opened"),
+                .custom_flags(O_NONBLOCK)
+                .open("/dev/uinput")?,
             callbacks: Arc::new(Mutex::new(HashMap::new())),
             callback_counter: 0,
             is_listening: false,
@@ -110,7 +110,7 @@ impl UInputMouseManager {
         // the event, otherwise it will not notice the event we are about to send.
         thread::sleep(Duration::from_millis(300));
 
-        manager
+        Ok(manager)
     }
 
     #[inline]
@@ -259,6 +259,8 @@ impl MouseActions for UInputMouseManager {
         Ok(())
     }
 }
+
+pub const O_NONBLOCK: i32 = 2048;
 
 /// ioctl and uinput definitions
 const UI_ABS_SETUP: c_ulong = 1075598596;

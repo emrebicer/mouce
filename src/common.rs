@@ -355,7 +355,7 @@ mod tests {
         target_os = "openbsd"
     ))]
     fn get_mouse_manager() -> Box<dyn MouseActions> {
-        Mouse::new((0, 1920), (0, 1080))
+        Mouse::new((0, 1920), (0, 1080)).unwrap()
     }
 
     #[ignore]

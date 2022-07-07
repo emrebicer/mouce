@@ -23,11 +23,11 @@ pub struct WindowsMouseManager {
 }
 
 impl WindowsMouseManager {
-    pub fn new() -> Box<dyn MouseActions> {
-        Box::new(WindowsMouseManager {
+    pub fn new() -> Result<Box<dyn MouseActions>> {
+        Ok(Box::new(WindowsMouseManager {
             callback_counter: 0,
             is_listening: false,
-        })
+        }))
     }
 
     fn send_input(&self, event: WindowsMouseEvent, mouse_data: i32) -> Result<()> {

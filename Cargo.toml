@@ -40,3 +40,6 @@ glob = "0.3.0"
 
 [dependencies]
 clap = { version = "3.1.8", features = ["derive"], optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2.126"

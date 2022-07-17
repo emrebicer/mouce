@@ -8,7 +8,6 @@
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use std::{
     collections::HashMap,
-    ffi::CString,
     fs::File,
     io::{Error, ErrorKind, Result, Write},
     os::{
@@ -52,9 +51,9 @@ impl UInputMouseManager {
             ioctl(
                 fd,
                 UI_ABS_SETUP,
-                &UinputAbsSetup {
+                &libc::uinput_abs_setup {
                     code: ABS_X as _,
-                    absinfo: InputAbsinfo {
+                    absinfo: libc::input_absinfo {
                         value: 0,
                         minimum: rng_x.0,
                         maximum: rng_x.1,
@@ -68,9 +67,9 @@ impl UInputMouseManager {
             ioctl(
                 fd,
                 UI_ABS_SETUP,
-                &UinputAbsSetup {
+                &libc::uinput_abs_setup {
                     code: ABS_Y as _,
-                    absinfo: InputAbsinfo {
+                    absinfo: libc::input_absinfo {
                         value: 0,
                         minimum: rng_y.0,
                         maximum: rng_y.1,
@@ -87,17 +86,35 @@ impl UInputMouseManager {
             ioctl(fd, UI_SET_RELBIT, REL_WHEEL);
         }
 
-        let usetup = UInputSetup {
-            id: InputId {
+        let mut usetup = libc::uinput_setup {
+            id: libc::input_id {
                 bustype: BUS_USB,
-                // Random vendor and product
                 vendor: 0x2222,
                 product: 0x3333,
                 version: 0,
             },
-            name: CString::new("mouce-library-fake-mouse").unwrap(),
+            name: [0; libc::UINPUT_MAX_NAME_SIZE],
             ff_effects_max: 0,
         };
+
+        // SAFETY: either casting [u8] to [u8], or [u8] to [i8], which is the same size
+        let name_bytes =
+            unsafe { &*("Mouce Lib Fake Mouse".as_ref() as *const [u8] as *const [i8]) };
+        // Panic if we're doing something really stupid
+        // + 1 for the null terminator; usetup.name was zero-initialized so there will be null
+        // bytes after the part we copy into
+        assert!(name_bytes.len() + 1 < libc::UINPUT_MAX_NAME_SIZE);
+        if name_bytes.len() + 1 >= libc::UINPUT_MAX_NAME_SIZE {
+            return Err(Error::new(
+                ErrorKind::Other,
+                format!(
+                    "uinput name too long {}, >= {}",
+                    name_bytes.len(),
+                    libc::UINPUT_MAX_NAME_SIZE - 1
+                ),
+            ));
+        }
+        usetup.name[..name_bytes.len()].copy_from_slice(name_bytes);
 
         unsafe {
             ioctl(fd, UI_DEV_SETUP, &usetup);
@@ -114,19 +131,19 @@ impl UInputMouseManager {
     }
 
     #[inline]
-    fn write_raw(&mut self, messages: &[InputEvent]) -> Result<()> {
+    fn write_raw(&mut self, messages: &[libc::input_event]) -> Result<()> {
         let bytes = unsafe { crate::cast_to_bytes(messages) };
         self.uinput_file.write_all(bytes)
     }
 
     /// Write the given event to the uinput file
     fn emit(&mut self, r#type: c_int, code: c_int, value: c_int) -> Result<()> {
-        let event = InputEvent {
-            time: TimeVal {
+        let event = libc::input_event {
+            time: libc::timeval {
                 tv_sec: 0,
                 tv_usec: 0,
             },
-            r#type: r#type as u16,
+            type_: r#type as u16,
             code: code as u16,
             value,
         };
@@ -287,52 +304,6 @@ pub const BTN_MIDDLE: c_int = 0x112;
 const SYN_REPORT: c_int = 0x00;
 const EV_SYN: c_int = 0x00;
 const BUS_USB: c_ushort = 0x03;
-
-/// uinput types
-#[repr(C)]
-struct UInputSetup {
-    id: InputId,
-    name: CString,
-    ff_effects_max: c_ulong,
-}
-
-#[repr(C)]
-struct InputId {
-    bustype: c_ushort,
-    vendor: c_ushort,
-    product: c_ushort,
-    version: c_ushort,
-}
-
-#[repr(C)]
-pub struct InputEvent {
-    pub time: TimeVal,
-    pub r#type: u16,
-    pub code: u16,
-    pub value: c_int,
-}
-
-#[repr(C)]
-pub struct TimeVal {
-    pub tv_sec: c_ulong,
-    pub tv_usec: c_ulong,
-}
-
-#[repr(C)]
-pub struct UinputAbsSetup {
-    pub code: u16,
-    pub absinfo: InputAbsinfo,
-}
-
-#[repr(C)]
-pub struct InputAbsinfo {
-    pub value: i32,
-    pub minimum: i32,
-    pub maximum: i32,
-    pub fuzz: i32,
-    pub flat: i32,
-    pub resolution: i32,
-}
 
 extern "C" {
     fn ioctl(fd: c_int, request: c_ulong, ...) -> c_int;

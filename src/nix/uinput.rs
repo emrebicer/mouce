@@ -8,14 +8,15 @@
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
 use std::collections::HashMap;
-use std::ffi::CString;
 use std::fs::File;
 use std::mem::size_of;
-use std::os::raw::{c_int, c_long, c_uint, c_ulong, c_ushort};
+use std::os::raw::{c_char, c_int, c_long, c_uint, c_ulong, c_ushort};
 use std::os::unix::prelude::AsRawFd;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+
+const UINPUT_MAX_NAME_SIZE: usize = 80;
 
 pub struct UInputMouseManager {
     uinput_file: File,
@@ -50,7 +51,7 @@ impl UInputMouseManager {
             ioctl(fd, UI_SET_RELBIT, REL_WHEEL);
         }
 
-        let usetup = UInputSetup {
+        let mut usetup = UInputSetup {
             id: InputId {
                 bustype: BUS_USB,
                 // Random vendor and product
@@ -58,9 +59,21 @@ impl UInputMouseManager {
                 product: 0x3333,
                 version: 0,
             },
-            name: CString::new("mouce-library-fake-mouse").unwrap(),
+            name: [0; UINPUT_MAX_NAME_SIZE],
             ff_effects_max: 0,
         };
+
+        let mut device_bytes: Vec<c_char> = "mouce-library-fake-mouse"
+            .chars()
+            .map(|ch| ch as c_char)
+            .collect();
+
+        // Fill the rest of the name buffer with empty chars
+        for _ in 0..UINPUT_MAX_NAME_SIZE - device_bytes.len() {
+            device_bytes.push('\0' as c_char);
+        }
+
+        usetup.name.copy_from_slice(&device_bytes);
 
         unsafe {
             ioctl(fd, UI_DEV_SETUP, &usetup);
@@ -243,7 +256,7 @@ const BUS_USB: c_ushort = 0x03;
 #[repr(C)]
 struct UInputSetup {
     id: InputId,
-    name: CString,
+    name: [c_char; UINPUT_MAX_NAME_SIZE],
     ff_effects_max: c_ulong,
 }
 

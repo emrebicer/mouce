@@ -148,7 +148,7 @@ impl Drop for UInputMouseManager {
         let fd = self.uinput_file.as_raw_fd();
         unsafe {
             // Destroy the device, the file is closed automatically by the File module
-            ioctl(fd, UI_DEV_DESTROY as u64);
+            ioctl(fd, UI_DEV_DESTROY as c_ulong);
         }
     }
 }

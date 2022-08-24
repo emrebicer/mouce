@@ -260,8 +260,8 @@ mod tests {
                     assert_eq!(x, position.0 as i32);
                     assert_eq!(y, position.1 as i32);
                 }
-            },
-            Err(error) => assert_eq!(error, Error::NotImplemented)
+            }
+            Err(error) => assert_eq!(error, Error::NotImplemented),
         }
     }
 

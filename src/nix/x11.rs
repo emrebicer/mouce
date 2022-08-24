@@ -162,7 +162,7 @@ struct XButtonEvent {
     same_screen: bool,
 }
 
-/// Xlib function definitions
+// Xlib function definitions
 #[link(name = "X11")]
 extern "C" {
     fn XOpenDisplay(display: *const c_char) -> *mut Display;
@@ -193,7 +193,7 @@ extern "C" {
     ) -> c_int;
 }
 
-/// XTest function definitions
+// XTest function definitions
 #[link(name = "Xtst")]
 extern "C" {
     fn XTestFakeButtonEvent(

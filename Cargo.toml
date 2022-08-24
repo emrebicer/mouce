@@ -22,7 +22,9 @@ categories = ["accessibility", "command-line-utilities"]
 opt-level = 0
 
 [features]
+default = ["x11"]
 cli = ["clap"]
+x11 = []
 
 [lib]
 name = "mouce"

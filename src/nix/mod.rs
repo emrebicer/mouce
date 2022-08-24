@@ -12,22 +12,26 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::mem::size_of;
 use std::os::unix::io::AsRawFd;
-use std::process::Command;
-use std::str::from_utf8;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-mod uinput;
+#[cfg(feature = "x11")]
+use std::{process::Command, str::from_utf8};
+#[cfg(feature = "x11")]
 mod x11;
+
+mod uinput;
 
 pub struct NixMouseManager {}
 
 impl NixMouseManager {
     pub fn new() -> Box<dyn MouseActions> {
-        // Try to identify the display manager using loginctl, if it fails
-        // read the environment variable $XDG_SESSION_TYPE
-        let output = Command::new("sh")
+        #[cfg(feature = "x11")]
+        {
+            // Try to identify the display manager using loginctl, if it fails
+            // read the environment variable $XDG_SESSION_TYPE
+            let output = Command::new("sh")
             .arg("-c")
             .arg("loginctl show-session $(loginctl | awk '/tty/ {print $1}') -p Type | awk -F= '{print $2}'")
             .output()
@@ -38,12 +42,18 @@ impl NixMouseManager {
                     .output().unwrap()
                 );
 
-        let display_manager = from_utf8(&output.stdout).unwrap().trim();
+            let display_manager = from_utf8(&output.stdout).unwrap().trim();
 
-        match display_manager {
-            "x11" => Box::new(x11::X11MouseManager::new()),
-            // If the display manager is unknown default to uinput
-            _ => Box::new(uinput::UInputMouseManager::new()),
+            match display_manager {
+                "x11" => Box::new(x11::X11MouseManager::new()),
+                // If the display manager is unknown default to uinput
+                _ => Box::new(uinput::UInputMouseManager::new()),
+            }
+        }
+        #[cfg(not(feature = "x11"))]
+        {
+            // If x11 feature is disabled, just return uinput mouse manager
+            return Box::new(uinput::UInputMouseManager::new());
         }
     }
 }

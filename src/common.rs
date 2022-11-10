@@ -2,20 +2,20 @@ use crate::error::Error;
 
 pub type CallbackId = u8;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum MouseButton {
     Left,
     Middle,
     Right,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum ScrollDirection {
     Up,
     Down,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum MouseEvent {
     RelativeMove(i32, i32),
     AbsoluteMove(i32, i32),

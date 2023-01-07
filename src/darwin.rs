@@ -20,6 +20,7 @@ pub struct DarwinMouseManager {
 }
 
 impl DarwinMouseManager {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new() -> Box<dyn MouseActions> {
         Box::new(DarwinMouseManager {
             callback_counter: 0,

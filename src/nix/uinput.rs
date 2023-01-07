@@ -7,6 +7,7 @@
 ///
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
+use crate::nix::Callbacks;
 use std::collections::HashMap;
 use std::fs::File;
 use std::mem::size_of;
@@ -20,7 +21,7 @@ const UINPUT_MAX_NAME_SIZE: usize = 80;
 
 pub struct UInputMouseManager {
     uinput_file: File,
-    callbacks: Arc<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>>,
+    callbacks: Callbacks,
     callback_counter: CallbackId,
     is_listening: bool,
 }
@@ -105,9 +106,7 @@ impl UInputMouseManager {
         unsafe {
             let count = size_of::<InputEvent>();
             let written_bytes = write(fd, &mut event, count);
-            if written_bytes == -1 {
-                return Err(Error::WriteFailed);
-            } else if written_bytes != count as c_long {
+            if written_bytes == -1 || written_bytes != count as c_long {
                 return Err(Error::WriteFailed);
             }
         }
@@ -194,8 +193,8 @@ impl MouseActions for UInputMouseManager {
     }
 
     fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
-        self.press_button(&button)?;
-        self.release_button(&button)
+        self.press_button(button)?;
+        self.release_button(button)
     }
 
     fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {

@@ -102,8 +102,8 @@ pub trait MouseActions {
     /// assert_eq!(manager.click_button(&MouseButton::Left), Ok(()));
     /// ```
     fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
-        self.press_button(&button)?;
-        self.release_button(&button)
+        self.press_button(button)?;
+        self.release_button(button)
     }
     /// Scroll the mouse wheel towards to the given direction
     ///

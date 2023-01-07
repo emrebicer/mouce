@@ -4,6 +4,7 @@
 ///
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
+use crate::nix::Callbacks;
 use std::collections::HashMap;
 use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 use std::sync::{Arc, Mutex};
@@ -11,7 +12,7 @@ use std::sync::{Arc, Mutex};
 pub struct X11MouseManager {
     display: *mut Display,
     window: Window,
-    callbacks: Arc<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>>,
+    callbacks: Callbacks,
     callback_counter: CallbackId,
     is_listening: bool,
 }

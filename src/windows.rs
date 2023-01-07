@@ -21,6 +21,7 @@ pub struct WindowsMouseManager {
 }
 
 impl WindowsMouseManager {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new() -> Box<dyn MouseActions> {
         Box::new(WindowsMouseManager {
             callback_counter: 0,

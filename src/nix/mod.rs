@@ -23,9 +23,12 @@ mod x11;
 
 mod uinput;
 
+type Callbacks = Arc<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>>;
+
 pub struct NixMouseManager {}
 
 impl NixMouseManager {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new() -> Box<dyn MouseActions> {
         #[cfg(feature = "x11")]
         {
@@ -35,7 +38,7 @@ impl NixMouseManager {
             .arg("-c")
             .arg("loginctl show-session $(loginctl | awk '/tty/ {print $1}') -p Type | awk -F= '{print $2}'")
             .output()
-            .unwrap_or(
+            .unwrap_or_else(|_|
                 Command::new("sh")
                     .arg("-c")
                     .arg("echo $XDG_SESSION_TYPE")
@@ -59,9 +62,7 @@ impl NixMouseManager {
 }
 
 /// Start the event listener for nix systems
-fn start_nix_listener(
-    callbacks: &Arc<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>>,
-) -> Result<(), Error> {
+fn start_nix_listener(callbacks: &Callbacks) -> Result<(), Error> {
     let (tx, rx) = mpsc::channel();
 
     // Read all the mouse events listed under /dev/input/by-id

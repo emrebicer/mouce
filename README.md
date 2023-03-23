@@ -45,7 +45,7 @@ This example program moves the mouse from left to right;
 use std::thread;
 use std::time::Duration;
 
-use mouce::Mouse;
+use mouse::Mouse;
 
 fn main() {
     let mouse_manager = Mouse::new();

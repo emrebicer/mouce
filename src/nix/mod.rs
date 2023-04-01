@@ -17,8 +17,6 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 #[cfg(feature = "x11")]
-use std::{process::Command, str::from_utf8};
-#[cfg(feature = "x11")]
 mod x11;
 
 mod uinput;
@@ -34,21 +32,10 @@ impl NixMouseManager {
         {
             // Try to identify the display manager using loginctl, if it fails
             // read the environment variable $XDG_SESSION_TYPE
-            let output = Command::new("sh")
-            .arg("-c")
-            .arg("loginctl show-session $(loginctl | awk '/tty/ {print $1}') -p Type | awk -F= '{print $2}'")
-            .output()
-            .unwrap_or_else(|_|
-                Command::new("sh")
-                    .arg("-c")
-                    .arg("echo $XDG_SESSION_TYPE")
-                    .output().unwrap()
-                );
-
-            let display_manager = from_utf8(&output.stdout).unwrap().trim();
+            let display_manager = std::env::var("XDG_SESSION_TYPE");
 
             match display_manager {
-                "x11" => Box::new(x11::X11MouseManager::new()),
+                Ok(s) if &s == "x11" => Box::new(x11::X11MouseManager::new()),
                 // If the display manager is unknown default to uinput
                 _ => Box::new(uinput::UInputMouseManager::new()),
             }

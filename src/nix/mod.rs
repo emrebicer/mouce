@@ -32,25 +32,10 @@ impl NixMouseManager {
     pub fn new() -> Box<dyn MouseActions> {
         #[cfg(feature = "x11")]
         {
-            // Try to identify the display manager using loginctl, if it fails
-            // read the environment variable $XDG_SESSION_TYPE
-            let output = Command::new("sh")
-            .arg("-c")
-            .arg("loginctl show-session $(loginctl | awk '/tty/ {print $1}') -p Type | awk -F= '{print $2}'")
-            .output()
-            .unwrap_or_else(|_|
-                Command::new("sh")
-                    .arg("-c")
-                    .arg("echo $XDG_SESSION_TYPE")
-                    .output().unwrap()
-                );
-
-            let display_manager = from_utf8(&output.stdout).unwrap().trim();
-
-            match display_manager {
-                "x11" => Box::new(x11::X11MouseManager::new()),
-                // If the display manager is unknown default to uinput
-                _ => Box::new(uinput::UInputMouseManager::new()),
+            if is_x11() {
+                Box::new(x11::X11MouseManager::new())
+            } else {
+                Box::new(uinput::UInputMouseManager::new())
             }
         }
         #[cfg(not(feature = "x11"))]
@@ -152,6 +137,34 @@ fn start_nix_listener(callbacks: &Callbacks) -> Result<(), Error> {
     });
 
     Ok(())
+}
+
+fn is_x11() -> bool {
+    // Try to verify x11 using loginctl
+    let loginctl_output = Command::new("sh")
+        .arg("-c")
+        .arg("loginctl show-session $(loginctl | awk '/tty/ {print $1}') -p Type --value")
+        .output();
+
+    if let Ok(out) = loginctl_output {
+        if from_utf8(&out.stdout).unwrap().trim().to_lowercase() == "x11" {
+            return true;
+        }
+    }
+
+    // If loginctl fails try to read the environment variable $XDG_SESSION_TYPE
+    let xdg_session_type = Command::new("sh")
+        .arg("-c")
+        .arg("echo $XDG_SESSION_TYPE")
+        .output();
+
+    if let Ok(out) = xdg_session_type {
+        if from_utf8(&out.stdout).unwrap().trim().to_lowercase() == "x11" {
+            return true;
+        }
+    }
+
+    false
 }
 
 extern "C" {

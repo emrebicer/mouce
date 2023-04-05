@@ -153,13 +153,8 @@ fn is_x11() -> bool {
     }
 
     // If loginctl fails try to read the environment variable $XDG_SESSION_TYPE
-    let xdg_session_type = Command::new("sh")
-        .arg("-c")
-        .arg("echo $XDG_SESSION_TYPE")
-        .output();
-
-    if let Ok(out) = xdg_session_type {
-        if from_utf8(&out.stdout).unwrap().trim().to_lowercase() == "x11" {
+    if let Ok(session_type) = std::env::var("XDG_SESSION_TYPE") {
+        if session_type.trim().to_lowercase() == "x11" {
             return true;
         }
     }

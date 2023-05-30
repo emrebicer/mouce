@@ -30,14 +30,14 @@ impl WindowsMouseManager {
     }
 
     fn send_input(&self, event: WindowsMouseEvent, mouse_data: i32) -> Result<(), Error> {
-        let (x, y) = self.get_position()?;
+        let (x, y) = self.get_position_raw()?;
         let mut input = Input {
             r#type: INPUT_MOUSE,
             mi: MouseInput {
                 dx: x,
                 dy: y,
                 mouse_data,
-                dw_flags: event as u32,
+                dw_flags: event as DWord,
                 time: 0,
                 dw_extra_info: unsafe { GetMessageExtraInfo() as *mut c_ulong },
             },
@@ -66,7 +66,10 @@ impl WindowsMouseManager {
                 let mouse_event = match w_param {
                     WM_MOUSEMOVE => {
                         let (x, y) = get_point(lpdata);
-                        Some(MouseEvent::AbsoluteMove(x, y))
+                        Some(MouseEvent::AbsoluteMove(
+                            x.try_into().expect("Can't fit i64 into i32"),
+                            y.try_into().expect("Can't fit i64 into i32"),
+                        ))
                     }
                     WM_LBUTTONDOWN => Some(MouseEvent::Press(MouseButton::Left)),
                     WM_MBUTTONDOWN => Some(MouseEvent::Press(MouseButton::Middle)),
@@ -79,6 +82,13 @@ impl WindowsMouseManager {
                         match delta {
                             1 => Some(MouseEvent::Scroll(ScrollDirection::Up)),
                             _ => Some(MouseEvent::Scroll(ScrollDirection::Down)),
+                        }
+                    },
+                    WM_MOUSEHWHEEL => {
+                        let delta = get_delta(lpdata) / WHEEL_DELTA as u16;
+                        match delta {
+                            1 => Some(MouseEvent::Scroll(ScrollDirection::Right)),
+                            _ => Some(MouseEvent::Scroll(ScrollDirection::Left)),
                         }
                     }
                     _ => None,
@@ -102,6 +112,20 @@ impl WindowsMouseManager {
         });
 
         Ok(())
+    }
+
+    // Return the mouse position (c_long, c_long), but it does not directly
+    // comply with mouce interface, so we first fetch the positions here
+    // then try to convert it to (i32, i32) within the trait implementation
+    fn get_position_raw(&self) -> Result<(c_long, c_long), Error> {
+        let mut out = Point { x: 0, y: 0 };
+        unsafe {
+            let result = GetCursorPos(&mut out);
+            if result == 0 {
+                return Err(Error::CustomError("failed to get the cursor position"));
+            }
+        }
+        return Ok((out.x, out.y));
     }
 }
 
@@ -128,14 +152,13 @@ impl MouseActions for WindowsMouseManager {
     }
 
     fn get_position(&self) -> Result<(i32, i32), Error> {
-        let mut out = Point { x: 0, y: 0 };
-        unsafe {
-            let result = GetCursorPos(&mut out);
-            if result == 0 {
-                return Err(Error::CustomError("failed to get the cursor position"));
-            }
+        match self.get_position_raw() {
+            Ok((x, y)) => Ok((
+                x.try_into().expect("Can't fit i64 into i32"),
+                y.try_into().expect("Can't fit i64 into i32"),
+            )),
+            Err(e) => Err(e),
         }
-        return Ok((out.x, out.y));
     }
 
     fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
@@ -164,11 +187,13 @@ impl MouseActions for WindowsMouseManager {
     }
 
     fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
-        let scroll_amount = match direction {
-            ScrollDirection::Up => 150,
-            ScrollDirection::Down => -150,
+        let (event, scroll_amount) = match direction {
+            ScrollDirection::Up => (WindowsMouseEvent::Wheel, 150),
+            ScrollDirection::Down => (WindowsMouseEvent::Wheel, -150),
+            ScrollDirection::Right => (WindowsMouseEvent::HWheel, 150),
+            ScrollDirection::Left => (WindowsMouseEvent::HWheel, -150),
         };
-        self.send_input(WindowsMouseEvent::Wheel, scroll_amount)
+        self.send_input(event, scroll_amount)
     }
 
     fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
@@ -266,6 +291,7 @@ const WM_RBUTTONUP: c_uint = 0x0205;
 const WM_MBUTTONDOWN: c_uint = 0x0207;
 const WM_MBUTTONUP: c_uint = 0x0208;
 const WM_MOUSEWHEEL: c_uint = 0x020A;
+const WM_MOUSEHWHEEL: c_uint =  0x020E;
 const WHEEL_DELTA: c_short = 120;
 const WH_MOUSE_LL: c_int = 14;
 enum Hhook__ {}
@@ -301,6 +327,7 @@ enum WindowsMouseEvent {
     MiddleDown = 0x0020,
     MiddleUp = 0x0040,
     Wheel = 0x0800,
+    HWheel = 0x01000,
 }
 
 #[repr(C)]
@@ -323,7 +350,7 @@ struct MSLLHookStruct {
     dw_extra_info: usize,
 }
 
-/// User32 function definitions
+// User32 function definitions
 #[link(name = "user32")]
 extern "system" {
     fn SetCursorPos(x: c_int, y: c_int) -> c_int;

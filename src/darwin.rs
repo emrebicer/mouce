@@ -51,10 +51,29 @@ impl DarwinMouseManager {
         Ok(())
     }
 
-    fn create_scroll_wheel_event(&self, distance: c_int) -> Result<(), Error> {
+    fn create_scroll_wheel_event(
+        &self,
+        distance: c_int,
+        direction: &ScrollDirection,
+    ) -> Result<(), Error> {
         unsafe {
-            let event =
-                CGEventCreateScrollWheelEvent(null_mut(), CGScrollEventUnit::Line, 1, distance);
+            let event = match direction {
+                ScrollDirection::Up | ScrollDirection::Down => CGEventCreateScrollWheelEvent(
+                    null_mut(),
+                    CGScrollEventUnit::Line,
+                    2,
+                    distance,
+                    0,
+                ),
+                ScrollDirection::Right | ScrollDirection::Left => CGEventCreateScrollWheelEvent(
+                    null_mut(),
+                    CGScrollEventUnit::Line,
+                    2,
+                    0,
+                    distance,
+                ),
+            };
+
             if event == null_mut() {
                 return Err(Error::CGCouldNotCreateEvent);
             }
@@ -86,11 +105,20 @@ impl DarwinMouseManager {
                     }
                     CGEventType::ScrollWheel => {
                         // CGEventField::scrollWheelEventPointDeltaAxis1 = 96
-                        let delta = CGEventGetIntegerValueField(cg_event, 96);
-                        if delta > 0 {
+                        // CGEventField::scrollWheelEventPointDeltaAxis2 = 97
+                        let delta_y = CGEventGetIntegerValueField(cg_event, 96);
+                        let delta_x = CGEventGetIntegerValueField(cg_event, 97);
+                        if delta_y > 0 {
                             Some(MouseEvent::Scroll(ScrollDirection::Up))
-                        } else {
+                        } else if delta_y < 0 {
                             Some(MouseEvent::Scroll(ScrollDirection::Down))
+                        } else if delta_x < 0 {
+                            Some(MouseEvent::Scroll(ScrollDirection::Right))
+                        } else if delta_x > 0 {
+                            Some(MouseEvent::Scroll(ScrollDirection::Left))
+                        } else {
+                            // Probably axis3 wheel scrolled
+                            None
                         }
                     }
                     _ => None,
@@ -210,10 +238,10 @@ impl MouseActions for DarwinMouseManager {
 
     fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
         let distance = match direction {
-            ScrollDirection::Up => 5,
-            ScrollDirection::Down => -5,
+            ScrollDirection::Up | ScrollDirection::Left => 5,
+            ScrollDirection::Down | ScrollDirection::Right => -5,
         };
-        self.create_scroll_wheel_event(distance)
+        self.create_scroll_wheel_event(distance, direction)
     }
 
     fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
@@ -379,8 +407,12 @@ extern "C" {
     fn CGEventCreateScrollWheelEvent(
         source: CGEventSourceRef,
         units: CGScrollEventUnit,
+        // Number of scroll directions/wheels, maximum is 3
         wheel_count: c_int,
+        // Vertical wheel movement distance
         wheel1: c_int,
+        // Horizontal wheel movement distance
+        wheel2: c_int,
     ) -> CGEventRef;
     fn CGEventPost(tap: CGEventTapLocation, event: CGEventRef);
     fn CGEventTapCreate(

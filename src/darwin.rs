@@ -112,9 +112,9 @@ impl DarwinMouseManager {
                             Some(MouseEvent::Scroll(ScrollDirection::Up))
                         } else if delta_y < 0 {
                             Some(MouseEvent::Scroll(ScrollDirection::Down))
-                        } else if delta_x > 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Right))
                         } else if delta_x < 0 {
+                            Some(MouseEvent::Scroll(ScrollDirection::Right))
+                        } else if delta_x > 0 {
                             Some(MouseEvent::Scroll(ScrollDirection::Left))
                         } else {
                             // Probably axis3 wheel scrolled
@@ -238,8 +238,8 @@ impl MouseActions for DarwinMouseManager {
 
     fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
         let distance = match direction {
-            ScrollDirection::Up | ScrollDirection::Right => 5,
-            ScrollDirection::Down | ScrollDirection::Left => -5,
+            ScrollDirection::Up | ScrollDirection::Left => 5,
+            ScrollDirection::Down | ScrollDirection::Right => -5,
         };
         self.create_scroll_wheel_event(distance, direction)
     }

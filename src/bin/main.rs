@@ -136,10 +136,12 @@ fn get_scroll_direction(
     match direction {
         "up" => Ok(mouce::common::ScrollDirection::Up),
         "down" => Ok(mouce::common::ScrollDirection::Down),
+        "right" => Ok(mouce::common::ScrollDirection::Right),
+        "left" => Ok(mouce::common::ScrollDirection::Left),
         _ => Err(Box::new(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
             format!(
-                "{} is not accepted as a direction, please use up or down",
+                "{} is not accepted as a direction, please use up, down, right or left",
                 direction
             ),
         ))),

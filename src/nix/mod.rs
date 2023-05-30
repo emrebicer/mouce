@@ -5,7 +5,7 @@
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
 use crate::nix::uinput::{
-    InputEvent, TimeVal, BTN_LEFT, BTN_MIDDLE, BTN_RIGHT, EV_KEY, EV_REL, REL_WHEEL, REL_X, REL_Y,
+    InputEvent, TimeVal, BTN_LEFT, BTN_MIDDLE, BTN_RIGHT, EV_KEY, EV_REL, REL_WHEEL, REL_HWHEEL, REL_X, REL_Y,
 };
 use glob::glob;
 use std::collections::HashMap;
@@ -116,6 +116,12 @@ fn start_nix_listener(callbacks: &Callbacks) -> Result<(), Error> {
                         ScrollDirection::Up
                     } else {
                         ScrollDirection::Down
+                    })
+                } else if code == REL_HWHEEL {
+                    MouseEvent::Scroll(if received.value > 0 {
+                        ScrollDirection::Right
+                    } else {
+                        ScrollDirection::Left
                     })
                 } else if code == REL_X {
                     MouseEvent::RelativeMove(val, 0)

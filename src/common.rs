@@ -13,6 +13,8 @@ pub enum MouseButton {
 pub enum ScrollDirection {
     Up,
     Down,
+    Right,
+    Left
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -289,6 +291,28 @@ mod tests {
         let manager = Mouse::new();
         for _ in 0..10 {
             assert_eq!(manager.scroll_wheel(&ScrollDirection::Up), Ok(()));
+            let sleep_duration = time::Duration::from_millis(250);
+            thread::sleep(sleep_duration);
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn scroll_right() {
+        let manager = Mouse::new();
+        for _ in 0..10 {
+            assert_eq!(manager.scroll_wheel(&ScrollDirection::Right), Ok(()));
+            let sleep_duration = time::Duration::from_millis(250);
+            thread::sleep(sleep_duration);
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn scroll_left() {
+        let manager = Mouse::new();
+        for _ in 0..10 {
+            assert_eq!(manager.scroll_wheel(&ScrollDirection::Left), Ok(()));
             let sleep_duration = time::Duration::from_millis(250);
             thread::sleep(sleep_duration);
         }

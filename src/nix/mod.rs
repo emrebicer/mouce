@@ -5,7 +5,8 @@
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
 use crate::nix::uinput::{
-    InputEvent, TimeVal, BTN_LEFT, BTN_MIDDLE, BTN_RIGHT, EV_KEY, EV_REL, REL_WHEEL, REL_HWHEEL, REL_X, REL_Y,
+    InputEvent, TimeVal, BTN_LEFT, BTN_MIDDLE, BTN_RIGHT, EV_KEY, EV_REL, REL_HWHEEL, REL_WHEEL,
+    REL_X, REL_Y,
 };
 use glob::glob;
 use std::collections::HashMap;
@@ -50,14 +51,42 @@ impl NixMouseManager {
 fn start_nix_listener(callbacks: &Callbacks) -> Result<(), Error> {
     let (tx, rx) = mpsc::channel();
 
-    // Read all the mouse events listed under /dev/input/by-id
-    // by-id directory is a collection of symlinks to /dev/input/event*
+    let mut previous_paths = vec![];
+    // Read all the mouse events listed under /dev/input/by-id and
+    // /dev/input/by-path. These directories are collections of symlinks
+    // to /dev/input/event*
+    //
     // I am only interested in the ones that end with `-event-mouse`
-    for file in glob("/dev/input/by-id/*-event-mouse").expect("Failed to read glob pattern") {
-        let path = file
-            .expect("Failed because of an IO error")
-            .display()
-            .to_string();
+    for file in glob("/dev/input/by-id/*-event-mouse")
+        .expect("Failed to read by-id glob pattern")
+        .chain(
+            glob("/dev/input/by-path/*-event-mouse").expect("Failed to read by-path glob pattern"),
+        )
+    {
+        let mut file = file.expect("Failed because of an IO error");
+
+        // Get the link if it exists
+        if let Ok(rel_path) = file.read_link() {
+            if rel_path.is_absolute() {
+                file = rel_path;
+            } else {
+                // Remove the file name from the path buffer, leaving us with path to directory
+                file.pop();
+                // Push the relative path of the link (e.g. `../event8`)
+                file.push(rel_path);
+                // Get the absolute path to final path
+                file = std::fs::canonicalize(file)
+                    .expect("Can't get absolute path to linked device file");
+            }
+        }
+
+        let path = file.display().to_string();
+
+        if previous_paths.contains(&path) {
+            continue;
+        }
+
+        previous_paths.push(path.clone());
 
         let event = match File::options().read(true).open(path) {
             Ok(file) => file,

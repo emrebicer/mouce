@@ -134,7 +134,7 @@ pub trait MouseActions {
     /// ```rust,no_run
     /// use mouce::Mouse;
     /// use mouce::common::ScrollDirection;
-    /// use std::{thread, time};
+    /// use std::{thread, time::Duration};
     ///
     /// let manager = Mouse::new();
     /// let sleep_duration = Duration::from_millis(250);
@@ -189,7 +189,7 @@ pub trait MouseActions {
 mod tests {
     use crate::error::Error;
     use crate::{common::MouseButton, common::ScrollDirection, Mouse};
-    use std::{thread, time};
+    use std::{thread, time::Duration};
 
     #[test]
     #[ignore]

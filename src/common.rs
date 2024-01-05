@@ -107,6 +107,26 @@ pub trait MouseActions {
         self.press_button(button)?;
         self.release_button(button)
     }
+    /// Click the given mouse button with the specified delay for "pressing" and "releasing" the button
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use std::time::Duration;
+    /// use mouce::Mouse;
+    /// use mouce::common::MouseButton;
+    ///
+    /// let manager = Mouse::new();
+    /// let press_delay = Duration::from_millis(200); //wait 200ms before pressing the button
+    /// let release_delay = Duration::from_millis(200); // hold the button for 200ms and then release it
+    /// assert_eq!(manager.click_button_delayed(&MouseButton::Left,Some(press_delay),Some(release_delay)), Ok(()));
+    /// ```
+    fn click_button_delayed(&self, button: &MouseButton, press_delay: Option<std::time::Duration>, release_delay: Option<std::time::Duration>) -> Result<(), Error> {
+        if let Some(delay) = press_delay { std::thread::sleep(delay); }
+        self.press_button(button)?;
+        if let Some(delay) = release_delay { std::thread::sleep(delay); }
+        self.release_button(button)
+    }
     /// Scroll the mouse wheel towards to the given direction
     ///
     /// # Examples
@@ -117,7 +137,7 @@ pub trait MouseActions {
     /// use std::{thread, time};
     ///
     /// let manager = Mouse::new();
-    /// let sleep_duration = time::Duration::from_millis(250);
+    /// let sleep_duration = Duration::from_millis(250);
     ///
     /// for _ in 0..5 {
     ///     assert_eq!(manager.scroll_wheel(&ScrollDirection::Down), Ok(()));
@@ -189,7 +209,7 @@ mod tests {
     #[ignore]
     fn move_to_left_to_right() {
         let manager = Mouse::new();
-        let sleep_duration = time::Duration::from_millis(1);
+        let sleep_duration = Duration::from_millis(1);
         let mut x = 0;
         while x < 1920 {
             assert_eq!(manager.move_to(x, 540), Ok(()));
@@ -202,7 +222,7 @@ mod tests {
     #[ignore]
     fn move_relative_left_to_right() {
         let manager = Mouse::new();
-        let sleep_duration = time::Duration::from_millis(1);
+        let sleep_duration = Duration::from_millis(1);
         let mut x = 0;
         assert_eq!(manager.move_to(0, 540), Ok(()));
         while x < 1920 {
@@ -216,7 +236,7 @@ mod tests {
     #[ignore]
     fn move_to_top_to_bottom() {
         let manager = Mouse::new();
-        let sleep_duration = time::Duration::from_millis(1);
+        let sleep_duration = Duration::from_millis(1);
         let mut y = 0;
         while y < 1080 {
             assert_eq!(manager.move_to(960, y), Ok(()));
@@ -229,7 +249,7 @@ mod tests {
     #[ignore]
     fn move_relative_top_to_bottom() {
         let manager = Mouse::new();
-        let sleep_duration = time::Duration::from_millis(1);
+        let sleep_duration = Duration::from_millis(1);
         let mut y = 0;
         assert_eq!(manager.move_to(960, 0), Ok(()));
         while y < 1080 {
@@ -280,7 +300,7 @@ mod tests {
         let manager = Mouse::new();
         for _ in 0..10 {
             assert_eq!(manager.scroll_wheel(&ScrollDirection::Down), Ok(()));
-            let sleep_duration = time::Duration::from_millis(250);
+            let sleep_duration = Duration::from_millis(250);
             thread::sleep(sleep_duration);
         }
     }
@@ -291,7 +311,7 @@ mod tests {
         let manager = Mouse::new();
         for _ in 0..10 {
             assert_eq!(manager.scroll_wheel(&ScrollDirection::Up), Ok(()));
-            let sleep_duration = time::Duration::from_millis(250);
+            let sleep_duration = Duration::from_millis(250);
             thread::sleep(sleep_duration);
         }
     }
@@ -302,7 +322,7 @@ mod tests {
         let manager = Mouse::new();
         for _ in 0..10 {
             assert_eq!(manager.scroll_wheel(&ScrollDirection::Right), Ok(()));
-            let sleep_duration = time::Duration::from_millis(250);
+            let sleep_duration = Duration::from_millis(250);
             thread::sleep(sleep_duration);
         }
     }
@@ -313,7 +333,7 @@ mod tests {
         let manager = Mouse::new();
         for _ in 0..10 {
             assert_eq!(manager.scroll_wheel(&ScrollDirection::Left), Ok(()));
-            let sleep_duration = time::Duration::from_millis(250);
+            let sleep_duration = Duration::from_millis(250);
             thread::sleep(sleep_duration);
         }
     }

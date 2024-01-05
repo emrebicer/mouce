@@ -83,7 +83,7 @@ impl WindowsMouseManager {
                             1 => Some(MouseEvent::Scroll(ScrollDirection::Up)),
                             _ => Some(MouseEvent::Scroll(ScrollDirection::Down)),
                         }
-                    },
+                    }
                     WM_MOUSEHWHEEL => {
                         let delta = get_delta(lpdata) / WHEEL_DELTA as u16;
                         match delta {
@@ -291,7 +291,7 @@ const WM_RBUTTONUP: c_uint = 0x0205;
 const WM_MBUTTONDOWN: c_uint = 0x0207;
 const WM_MBUTTONUP: c_uint = 0x0208;
 const WM_MOUSEWHEEL: c_uint = 0x020A;
-const WM_MOUSEHWHEEL: c_uint =  0x020E;
+const WM_MOUSEHWHEEL: c_uint = 0x020E;
 const WHEEL_DELTA: c_short = 120;
 const WH_MOUSE_LL: c_int = 14;
 enum Hhook__ {}

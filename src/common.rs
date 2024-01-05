@@ -14,7 +14,7 @@ pub enum ScrollDirection {
     Up,
     Down,
     Right,
-    Left
+    Left,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -121,10 +121,19 @@ pub trait MouseActions {
     /// let release_delay = Duration::from_millis(200); // hold the button for 200ms and then release it
     /// assert_eq!(manager.click_button_delayed(&MouseButton::Left,Some(press_delay),Some(release_delay)), Ok(()));
     /// ```
-    fn click_button_delayed(&self, button: &MouseButton, press_delay: Option<std::time::Duration>, release_delay: Option<std::time::Duration>) -> Result<(), Error> {
-        if let Some(delay) = press_delay { std::thread::sleep(delay); }
+    fn click_button_delayed(
+        &self,
+        button: &MouseButton,
+        press_delay: Option<std::time::Duration>,
+        release_delay: Option<std::time::Duration>,
+    ) -> Result<(), Error> {
+        if let Some(delay) = press_delay {
+            std::thread::sleep(delay);
+        }
         self.press_button(button)?;
-        if let Some(delay) = release_delay { std::thread::sleep(delay); }
+        if let Some(delay) = release_delay {
+            std::thread::sleep(delay);
+        }
         self.release_button(button)
     }
     /// Scroll the mouse wheel towards to the given direction

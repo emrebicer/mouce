@@ -1,6 +1,6 @@
 ///
 /// This module contains the mouse action functions
-/// for the windows opearting system
+/// for the windows operating system
 /// Uses the User32 system library
 ///
 use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
@@ -13,7 +13,8 @@ use std::sync::Mutex;
 use std::thread;
 
 static mut HOOK: HHook = null_mut();
-static mut CALLBACKS: Option<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>> = None;
+type MouseEventFn = Box<dyn Fn(&MouseEvent) + Send>;
+static mut CALLBACKS: Option<Mutex<HashMap<CallbackId, MouseEventFn>>> = None;
 
 pub struct WindowsMouseManager {
     callback_counter: CallbackId,
@@ -66,10 +67,7 @@ impl WindowsMouseManager {
                 let mouse_event = match w_param {
                     WM_MOUSEMOVE => {
                         let (x, y) = get_point(lpdata);
-                        Some(MouseEvent::AbsoluteMove(
-                            x.try_into().expect("Can't fit i64 into i32"),
-                            y.try_into().expect("Can't fit i64 into i32"),
-                        ))
+                        Some(MouseEvent::AbsoluteMove(x, y))
                     }
                     WM_LBUTTONDOWN => Some(MouseEvent::Press(MouseButton::Left)),
                     WM_MBUTTONDOWN => Some(MouseEvent::Press(MouseButton::Middle)),
@@ -94,13 +92,10 @@ impl WindowsMouseManager {
                     _ => None,
                 };
 
-                match (mouse_event, &mut CALLBACKS) {
-                    (Some(event), Some(callbacks)) => {
-                        for callback in callbacks.lock().unwrap().values() {
-                            callback(&event);
-                        }
+                if let (Some(event), Some(callbacks)) = (mouse_event, &mut CALLBACKS) {
+                    for callback in callbacks.get_mut().unwrap().values() {
+                        callback(&event);
                     }
-                    _ => {}
                 }
 
                 CallNextHookEx(HOOK, code, param, lpdata)
@@ -125,7 +120,7 @@ impl WindowsMouseManager {
                 return Err(Error::CustomError("failed to get the cursor position"));
             }
         }
-        return Ok((out.x, out.y));
+        Ok((out.x, out.y))
     }
 }
 
@@ -153,10 +148,7 @@ impl MouseActions for WindowsMouseManager {
 
     fn get_position(&self) -> Result<(i32, i32), Error> {
         match self.get_position_raw() {
-            Ok((x, y)) => Ok((
-                x.try_into().expect("Can't fit i64 into i32"),
-                y.try_into().expect("Can't fit i64 into i32"),
-            )),
+            Ok((x, y)) => Ok((x, y)),
             Err(e) => Err(e),
         }
     }
@@ -196,7 +188,7 @@ impl MouseActions for WindowsMouseManager {
         self.send_input(event, scroll_amount)
     }
 
-    fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
+    fn hook(&mut self, callback: MouseEventFn) -> Result<CallbackId, Error> {
         if !self.is_listening {
             self.start_listener()?;
             self.is_listening = true;
@@ -206,7 +198,7 @@ impl MouseActions for WindowsMouseManager {
         unsafe {
             match &mut CALLBACKS {
                 Some(callbacks) => {
-                    callbacks.lock().unwrap().insert(id, callback);
+                    callbacks.get_mut().unwrap().insert(id, callback);
                 }
                 None => {
                     initialize_callbacks();
@@ -221,7 +213,7 @@ impl MouseActions for WindowsMouseManager {
     fn unhook(&mut self, callback_id: CallbackId) -> Result<(), Error> {
         unsafe {
             match &mut CALLBACKS {
-                Some(callbacks) => match callbacks.lock().unwrap().remove(&callback_id) {
+                Some(callbacks) => match callbacks.get_mut().unwrap().remove(&callback_id) {
                     Some(_) => Ok(()),
                     None => Err(Error::UnhookFailed),
                 },
@@ -237,7 +229,7 @@ impl MouseActions for WindowsMouseManager {
         unsafe {
             match &mut CALLBACKS {
                 Some(callbacks) => {
-                    callbacks.lock().unwrap().clear();
+                    callbacks.get_mut().unwrap().clear();
                 }
                 None => {
                     initialize_callbacks();
@@ -281,6 +273,7 @@ type HInstance = *mut HInstance__;
 type HookProc =
     Option<unsafe extern "system" fn(code: c_int, w_param: WParam, l_param: LParam) -> LResult>;
 type LPMsg = *mut Msg;
+#[allow(clippy::upper_case_acronyms)]
 type HWND = *mut HWND__;
 type Word = c_ushort;
 const WM_MOUSEMOVE: c_uint = 0x0200;

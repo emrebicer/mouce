@@ -174,6 +174,7 @@ fn start_nix_listener(callbacks: &Callbacks) -> Result<(), Error> {
     Ok(())
 }
 
+#[cfg(feature = "x11")]
 fn is_x11() -> bool {
     // Try to verify x11 using loginctl
     let loginctl_output = Command::new("sh")

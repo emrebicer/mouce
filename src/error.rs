@@ -1,40 +1,21 @@
-use std::fmt;
+use thiserror::Error;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Error, Debug, PartialEq, Eq)]
 pub enum Error {
+    #[error("this function is not implemented for the current platform")]
     NotImplemented,
+    #[error("failed while trying to write to a file")]
     WriteFailed,
+    #[error("failed while trying to unhook a callback, make sure the id is correct")]
     UnhookFailed,
+    #[error("the pointer is not on the same screen as the specified window")]
     X11PointerWindowMismatch,
+    #[error("failed to send input, the input was already blocked by another thread")]
     InputIsBlocked,
+    #[error("CoreGraphics: failed to create mouse event")]
     CGCouldNotCreateEvent,
+    #[error("permission denied for this operation, plese try as super user")]
     PermissionDenied,
-    CustomError(&'static str),
-}
-
-impl std::error::Error for Error {}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let err_message = match self {
-            Error::NotImplemented => "this function is not implemented for the current platform",
-            Error::WriteFailed => "failed while trying to write to a file",
-            Error::UnhookFailed => {
-                "failed while trying to unhook a callback, make sure the id is correct"
-            }
-            Error::X11PointerWindowMismatch => {
-                "the pointer is not on the same screen as the specified window"
-            }
-            Error::InputIsBlocked => {
-                "failed to send input, the input was already blocked by another thread"
-            }
-            Error::CGCouldNotCreateEvent => "CoreGraphics: failed to create mouse event",
-            Error::PermissionDenied => {
-                "permission denied for this operation, plese try as super user"
-            }
-            Error::CustomError(err_description) => err_description,
-        };
-
-        write!(f, "{}", err_message)
-    }
+    #[error("Error: `{0}`")]
+    CustomError(String),
 }

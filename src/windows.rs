@@ -122,7 +122,7 @@ impl WindowsMouseManager {
         unsafe {
             let result = GetCursorPos(&mut out);
             if result == 0 {
-                return Err(Error::CustomError("failed to get the cursor position"));
+                return Err(Error::CustomError("failed to get the cursor position".to_string()));
             }
         }
         return Ok((out.x, out.y));
@@ -145,7 +145,7 @@ impl MouseActions for WindowsMouseManager {
         unsafe {
             let result = SetCursorPos(x as c_int, y as c_int);
             if result == 0 {
-                return Err(Error::CustomError("failed to set the cursor position"));
+                return Err(Error::CustomError("failed to set the cursor position".to_string()));
             }
         }
         Ok(())

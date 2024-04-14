@@ -192,7 +192,7 @@ impl MouseActions for DarwinMouseManager {
             let result = CGWarpMouseCursorPosition(cg_point);
             if result != CGError::Success {
                 return Err(Error::CustomError(
-                    "Failed to move the mouse, CGError is not Success",
+                    "Failed to move the mouse, CGError is not Success".to_string(),
                 ));
             }
         };

@@ -130,6 +130,8 @@ impl DarwinMouseManager {
                             None
                         }
                     }
+                    CGEventType::KeyDown => Some(MouseEvent::KeyDown()),
+                    CGEventType::KeyUp => Some(MouseEvent::KeyUp()),
                     _ => None,
                 };
 
@@ -158,7 +160,9 @@ impl DarwinMouseManager {
                         + (1 << CGEventType::OtherMouseDown as u64)
                         + (1 << CGEventType::OtherMouseUp as u64)
                         + (1 << CGEventType::MouseMoved as u64)
-                        + (1 << CGEventType::ScrollWheel as u64),
+                        + (1 << CGEventType::ScrollWheel as u64)
+                        + (1 << CGEventType::KeyDown as u64)
+                        + (1 << CGEventType::KeyUp as u64),
                     Some(mouse_on_event_callback),
                     null_mut(),
                 ));
@@ -359,6 +363,8 @@ enum CGEventType {
     OtherMouseDown = 25,
     OtherMouseUp = 26,
     _OtherMouseDragged = 27,
+    KeyDown = 10,
+    KeyUp = 11,
 }
 
 #[repr(C)]

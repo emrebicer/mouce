@@ -24,6 +24,8 @@ pub enum MouseEvent {
     Press(MouseButton, i32, i32),
     Release(MouseButton),
     Scroll(ScrollDirection),
+    KeyDown(),
+    KeyUp(),
 }
 
 pub trait MouseActions {

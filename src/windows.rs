@@ -71,9 +71,24 @@ impl WindowsMouseManager {
                             y.try_into().expect("Can't fit i64 into i32"),
                         ))
                     }
-                    WM_LBUTTONDOWN => Some(MouseEvent::Press(MouseButton::Left)),
-                    WM_MBUTTONDOWN => Some(MouseEvent::Press(MouseButton::Middle)),
-                    WM_RBUTTONDOWN => Some(MouseEvent::Press(MouseButton::Right)),
+                    WM_LBUTTONDOWN => {
+                        let (x, y) = get_point(lpdata);
+                        Some(MouseEvent::Press(MouseButton::Left,
+                                               x.try_into().expect("Can't fit i64 into i32"),
+                                               y.try_into().expect("Can't fit i64 into i32")))
+                    }
+                    WM_MBUTTONDOWN => {
+                        let (x, y) = get_point(lpdata);
+                        Some(MouseEvent::Press(MouseButton::Middle,
+                                               x.try_into().expect("Can't fit i64 into i32"),
+                                               y.try_into().expect("Can't fit i64 into i32")))
+                    }
+                    WM_RBUTTONDOWN => {
+                        let (x, y) = get_point(lpdata);
+                        Some(MouseEvent::Press(MouseButton::Right,
+                                               x.try_into().expect("Can't fit i64 into i32"),
+                                               y.try_into().expect("Can't fit i64 into i32")))
+                    }
                     WM_LBUTTONUP => Some(MouseEvent::Release(MouseButton::Left)),
                     WM_MBUTTONUP => Some(MouseEvent::Release(MouseButton::Middle)),
                     WM_RBUTTONUP => Some(MouseEvent::Release(MouseButton::Right)),
@@ -83,7 +98,7 @@ impl WindowsMouseManager {
                             1 => Some(MouseEvent::Scroll(ScrollDirection::Up)),
                             _ => Some(MouseEvent::Scroll(ScrollDirection::Down)),
                         }
-                    },
+                    }
                     WM_MOUSEHWHEEL => {
                         let delta = get_delta(lpdata) / WHEEL_DELTA as u16;
                         match delta {
@@ -279,7 +294,7 @@ type WParam = usize;
 type HHook = *mut Hhook__;
 type HInstance = *mut HInstance__;
 type HookProc =
-    Option<unsafe extern "system" fn(code: c_int, w_param: WParam, l_param: LParam) -> LResult>;
+Option<unsafe extern "system" fn(code: c_int, w_param: WParam, l_param: LParam) -> LResult>;
 type LPMsg = *mut Msg;
 type HWND = *mut HWND__;
 type Word = c_ushort;
@@ -291,7 +306,7 @@ const WM_RBUTTONUP: c_uint = 0x0205;
 const WM_MBUTTONDOWN: c_uint = 0x0207;
 const WM_MBUTTONUP: c_uint = 0x0208;
 const WM_MOUSEWHEEL: c_uint = 0x020A;
-const WM_MOUSEHWHEEL: c_uint =  0x020E;
+const WM_MOUSEHWHEEL: c_uint = 0x020E;
 const WHEEL_DELTA: c_short = 120;
 const WH_MOUSE_LL: c_int = 14;
 enum Hhook__ {}

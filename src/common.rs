@@ -21,7 +21,7 @@ pub enum ScrollDirection {
 pub enum MouseEvent {
     RelativeMove(i32, i32),
     AbsoluteMove(i32, i32),
-    Press(MouseButton),
+    Press(MouseButton, i32, i32),
     Release(MouseButton),
     Scroll(ScrollDirection),
 }

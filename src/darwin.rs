@@ -93,11 +93,20 @@ impl DarwinMouseManager {
             ) -> CGEventRef {
                 // Construct the library's MouseEvent
                 let mouse_event = match event_type {
-                    CGEventType::LeftMouseDown => Some(MouseEvent::Press(MouseButton::Left)),
+                    CGEventType::LeftMouseDown => {
+                        let point = CGEventGetLocation(cg_event);
+                        Some(MouseEvent::Press(MouseButton::Left, point.x as i32, point.y as i32))
+                    }
                     CGEventType::LeftMouseUp => Some(MouseEvent::Release(MouseButton::Left)),
-                    CGEventType::RightMouseDown => Some(MouseEvent::Press(MouseButton::Right)),
+                    CGEventType::RightMouseDown => {
+                        let point = CGEventGetLocation(cg_event);
+                        Some(MouseEvent::Press(MouseButton::Right, point.x as i32, point.y as i32))
+                    }
                     CGEventType::RightMouseUp => Some(MouseEvent::Release(MouseButton::Right)),
-                    CGEventType::OtherMouseDown => Some(MouseEvent::Press(MouseButton::Middle)),
+                    CGEventType::OtherMouseDown => {
+                        let point = CGEventGetLocation(cg_event);
+                        Some(MouseEvent::Press(MouseButton::Middle, point.x as i32, point.y as i32))
+                    }
                     CGEventType::OtherMouseUp => Some(MouseEvent::Release(MouseButton::Middle)),
                     CGEventType::MouseMoved => {
                         let point = CGEventGetLocation(cg_event);

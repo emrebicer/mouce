@@ -127,7 +127,13 @@ impl WindowsMouseManager {
                 ));
             }
         }
-        return Ok((out.x, out.y));
+        Ok((out.x, out.y))
+    }
+}
+
+impl Default for WindowsMouseManager {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

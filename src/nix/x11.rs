@@ -49,6 +49,12 @@ impl X11MouseManager {
     }
 }
 
+impl Default for X11MouseManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MouseActions for X11MouseManager {
     fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
         unsafe {
@@ -149,29 +155,6 @@ impl MouseActions for X11MouseManager {
 enum _XDisplay {}
 type Display = _XDisplay;
 type Window = c_ulong;
-
-#[derive(Debug)]
-#[repr(C)]
-struct XEvent {
-    r#type: c_int,
-    xbutton: XButtonEvent,
-}
-
-#[derive(Debug)]
-#[repr(C)]
-struct XButtonEvent {
-    r#type: c_int,
-    window: Window,
-    root: Window,
-    subwindow: Window,
-    x: c_int,
-    y: c_int,
-    x_root: c_int,
-    y_root: c_int,
-    state: c_uint,
-    button: c_uint,
-    same_screen: bool,
-}
 
 // Xlib function definitions
 #[link(name = "X11")]

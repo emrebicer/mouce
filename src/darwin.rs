@@ -167,6 +167,12 @@ impl DarwinMouseManager {
     }
 }
 
+impl Default for DarwinMouseManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drop for DarwinMouseManager {
     fn drop(&mut self) {
         unsafe {

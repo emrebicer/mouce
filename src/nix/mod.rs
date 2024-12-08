@@ -98,7 +98,7 @@ fn start_nix_listener(callbacks: &Callbacks) -> Result<(), Error> {
             // Construct the library's MouseEvent
             let r#type = received.r#type as i32;
             let code = received.code as i32;
-            let val = received.value as i32;
+            let val = received.value;
 
             let mouse_event = if r#type == EV_KEY {
                 let button = if code == BTN_LEFT {

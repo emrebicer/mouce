@@ -76,6 +76,12 @@ impl Mouse {
     }
 }
 
+impl Default for Mouse {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MouseActions for Mouse {
     fn move_to(&self, x: usize, y: usize) -> Result<(), error::Error> {
         self.inner.move_to(x, y)

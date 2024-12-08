@@ -154,6 +154,12 @@ impl UInputMouseManager {
     }
 }
 
+impl Default for UInputMouseManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drop for UInputMouseManager {
     fn drop(&mut self) {
         let fd = self.uinput_file_raw_fd();

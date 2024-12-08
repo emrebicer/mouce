@@ -14,18 +14,18 @@ use std::thread;
 static mut TAP_EVENT_REF: Option<CFTypeRef> = None;
 static mut CALLBACKS: Option<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>> = None;
 
+#[derive(Clone)]
 pub struct DarwinMouseManager {
     callback_counter: CallbackId,
     is_listening: bool,
 }
 
 impl DarwinMouseManager {
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new() -> Box<dyn MouseActions> {
-        Box::new(DarwinMouseManager {
+    pub fn new() -> Self {
+        DarwinMouseManager {
             callback_counter: 0,
             is_listening: false,
-        })
+        }
     }
 
     fn create_mouse_event(

@@ -15,18 +15,18 @@ use std::thread;
 static mut HOOK: HHook = null_mut();
 static mut CALLBACKS: Option<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>> = None;
 
+#[derive(Clone)]
 pub struct WindowsMouseManager {
     callback_counter: CallbackId,
     is_listening: bool,
 }
 
 impl WindowsMouseManager {
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new() -> Box<dyn MouseActions> {
-        Box::new(WindowsMouseManager {
+    pub fn new() -> Self {
+        WindowsMouseManager {
             callback_counter: 0,
             is_listening: false,
-        })
+        }
     }
 
     fn send_input(&self, event: WindowsMouseEvent, mouse_data: i32) -> Result<(), Error> {

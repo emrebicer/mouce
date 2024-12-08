@@ -11,6 +11,7 @@ use crate::nix::Callbacks;
 use std::collections::HashMap;
 use std::fs::File;
 use std::mem::size_of;
+use std::os::fd::RawFd;
 use std::os::raw::{c_char, c_int, c_long, c_uint, c_ulong, c_ushort};
 use std::os::unix::prelude::AsRawFd;
 use std::sync::{Arc, Mutex};
@@ -19,8 +20,9 @@ use std::time::Duration;
 
 const UINPUT_MAX_NAME_SIZE: usize = 80;
 
+#[derive(Clone)]
 pub struct UInputMouseManager {
-    uinput_file: File,
+    uinput_file: Arc<Mutex<File>>,
     callbacks: Callbacks,
     callback_counter: CallbackId,
     is_listening: bool,
@@ -29,15 +31,17 @@ pub struct UInputMouseManager {
 impl UInputMouseManager {
     pub fn new() -> Self {
         let manager = UInputMouseManager {
-            uinput_file: File::options()
-                .write(true)
-                .open("/dev/uinput")
-                .expect("uinput file can not be opened"),
+            uinput_file: Arc::new(Mutex::new(
+                File::options()
+                    .write(true)
+                    .open("/dev/uinput")
+                    .expect("uinput file can not be opened"),
+            )),
             callbacks: Arc::new(Mutex::new(HashMap::new())),
             callback_counter: 0,
             is_listening: false,
         };
-        let fd = manager.uinput_file.as_raw_fd();
+        let fd = manager.uinput_file_raw_fd();
         unsafe {
             // For press events (also needed for mouse movement)
             ioctl(fd, UI_SET_EVBIT, EV_KEY);
@@ -91,6 +95,13 @@ impl UInputMouseManager {
         manager
     }
 
+    fn uinput_file_raw_fd(&self) -> RawFd {
+        self.uinput_file
+            .lock()
+            .expect("uinput file lock is poisoned")
+            .as_raw_fd()
+    }
+
     /// Write the given event to the uinput file
     fn emit(&self, r#type: c_int, code: c_int, value: c_int) -> Result<(), Error> {
         let mut event = InputEvent {
@@ -102,7 +113,7 @@ impl UInputMouseManager {
             code: code as u16,
             value,
         };
-        let fd = self.uinput_file.as_raw_fd();
+        let fd = self.uinput_file_raw_fd();
 
         unsafe {
             let count = size_of::<InputEvent>();
@@ -145,7 +156,7 @@ impl UInputMouseManager {
 
 impl Drop for UInputMouseManager {
     fn drop(&mut self) {
-        let fd = self.uinput_file.as_raw_fd();
+        let fd = self.uinput_file_raw_fd();
         unsafe {
             // Destroy the device, the file is closed automatically by the File module
             ioctl(fd, UI_DEV_DESTROY as c_ulong);

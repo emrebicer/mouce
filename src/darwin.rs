@@ -200,6 +200,11 @@ impl MouseActions for DarwinMouseManager {
         Ok(())
     }
 
+    fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
+        let (x, y) = self.get_position()?;
+        self.move_to((x + x_offset) as usize, (y + y_offset) as usize)
+    }
+
     fn get_position(&self) -> Result<(i32, i32), Error> {
         unsafe {
             let event = CGEventCreate(null_mut());

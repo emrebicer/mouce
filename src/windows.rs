@@ -83,7 +83,7 @@ impl WindowsMouseManager {
                             1 => Some(MouseEvent::Scroll(ScrollDirection::Up)),
                             _ => Some(MouseEvent::Scroll(ScrollDirection::Down)),
                         }
-                    },
+                    }
                     WM_MOUSEHWHEEL => {
                         let delta = get_delta(lpdata) / WHEEL_DELTA as u16;
                         match delta {
@@ -122,7 +122,9 @@ impl WindowsMouseManager {
         unsafe {
             let result = GetCursorPos(&mut out);
             if result == 0 {
-                return Err(Error::CustomError("failed to get the cursor position".to_string()));
+                return Err(Error::CustomError(
+                    "failed to get the cursor position".to_string(),
+                ));
             }
         }
         return Ok((out.x, out.y));
@@ -145,10 +147,17 @@ impl MouseActions for WindowsMouseManager {
         unsafe {
             let result = SetCursorPos(x as c_int, y as c_int);
             if result == 0 {
-                return Err(Error::CustomError("failed to set the cursor position".to_string()));
+                return Err(Error::CustomError(
+                    "failed to set the cursor position".to_string(),
+                ));
             }
         }
         Ok(())
+    }
+
+    fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
+        let (x, y) = self.get_position()?;
+        self.move_to((x + x_offset) as usize, (y + y_offset) as usize)
     }
 
     fn get_position(&self) -> Result<(i32, i32), Error> {
@@ -291,7 +300,7 @@ const WM_RBUTTONUP: c_uint = 0x0205;
 const WM_MBUTTONDOWN: c_uint = 0x0207;
 const WM_MBUTTONUP: c_uint = 0x0208;
 const WM_MOUSEWHEEL: c_uint = 0x020A;
-const WM_MOUSEHWHEEL: c_uint =  0x020E;
+const WM_MOUSEHWHEEL: c_uint = 0x020E;
 const WHEEL_DELTA: c_short = 120;
 const WH_MOUSE_LL: c_int = 14;
 enum Hhook__ {}

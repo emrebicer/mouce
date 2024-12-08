@@ -2,7 +2,7 @@
 /// This module contains the mouse action functions
 /// for the unix-like systems
 ///
-use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
+use crate::common::{CallbackId, MouseButton, MouseEvent, ScrollDirection};
 use crate::error::Error;
 use crate::nix::uinput::{
     InputEvent, TimeVal, BTN_LEFT, BTN_MIDDLE, BTN_RIGHT, EV_KEY, EV_REL, REL_HWHEEL, REL_WHEEL,
@@ -20,32 +20,11 @@ use std::thread;
 #[cfg(feature = "x11")]
 use std::{process::Command, str::from_utf8};
 #[cfg(feature = "x11")]
-mod x11;
+pub mod x11;
 
-mod uinput;
+pub mod uinput;
 
 type Callbacks = Arc<Mutex<HashMap<CallbackId, Box<dyn Fn(&MouseEvent) + Send>>>>;
-
-pub struct NixMouseManager {}
-
-impl NixMouseManager {
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new() -> Box<dyn MouseActions> {
-        #[cfg(feature = "x11")]
-        {
-            if is_x11() {
-                Box::new(x11::X11MouseManager::new())
-            } else {
-                Box::new(uinput::UInputMouseManager::new())
-            }
-        }
-        #[cfg(not(feature = "x11"))]
-        {
-            // If x11 feature is disabled, just return uinput mouse manager
-            return Box::new(uinput::UInputMouseManager::new());
-        }
-    }
-}
 
 /// Start the event listener for nix systems
 fn start_nix_listener(callbacks: &Callbacks) -> Result<(), Error> {
@@ -174,6 +153,9 @@ fn start_nix_listener(callbacks: &Callbacks) -> Result<(), Error> {
     Ok(())
 }
 
+// Legacy function to check if x11 is available, it was used to fallback to uinput if
+// X11 was not available, this feature is not included anymore but perhaps can be reimplemented
+// in the build.rs to determine if x11 is enabled but not available in compile time
 #[cfg(feature = "x11")]
 fn is_x11() -> bool {
     // Try to verify x11 using loginctl

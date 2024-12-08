@@ -3,6 +3,7 @@ use std::time::Duration;
 
 #[cfg(feature = "cli")]
 use clap::{Arg, Command};
+use mouce::MouseActions;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Command::new("mouce")

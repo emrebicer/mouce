@@ -33,6 +33,7 @@ pub trait MouseActions {
     ///
     /// ```rust,no_run
     /// use mouce::Mouse;
+    /// use mouce::MouseActions;
     ///
     /// let manager = Mouse::new();
     /// assert_eq!(manager.move_to(0, 0), Ok(()));
@@ -44,14 +45,12 @@ pub trait MouseActions {
     ///
     /// ```rust,no_run
     /// use mouce::Mouse;
+    /// use mouce::MouseActions;
     ///
     /// let manager = Mouse::new();
     /// assert_eq!(manager.move_relative(100, 100), Ok(()));
     /// ```
-    fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
-        let (x, y) = self.get_position()?;
-        self.move_to((x + x_offset) as usize, (y + y_offset) as usize)
-    }
+    fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error>;
     /// Get the current position of the mouse
     ///
     /// # Examples
@@ -59,6 +58,7 @@ pub trait MouseActions {
     ///
     /// ```rust,no_run
     /// use mouce::Mouse;
+    /// use mouce::MouseActions;
     /// use mouce::error::Error;
     ///
     /// let manager = Mouse::new();
@@ -74,6 +74,7 @@ pub trait MouseActions {
     ///
     /// ```rust,no_run
     /// use mouce::Mouse;
+    /// use mouce::MouseActions;
     /// use mouce::common::MouseButton;
     ///
     /// let manager = Mouse::new();
@@ -86,6 +87,7 @@ pub trait MouseActions {
     ///
     /// ```rust,no_run
     /// use mouce::Mouse;
+    /// use mouce::MouseActions;
     /// use mouce::common::MouseButton;
     ///
     /// let manager = Mouse::new();
@@ -98,21 +100,20 @@ pub trait MouseActions {
     ///
     /// ```rust,no_run
     /// use mouce::Mouse;
+    /// use mouce::MouseActions;
     /// use mouce::common::MouseButton;
     ///
     /// let manager = Mouse::new();
     /// assert_eq!(manager.click_button(&MouseButton::Left), Ok(()));
     /// ```
-    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
-        self.press_button(button)?;
-        self.release_button(button)
-    }
+    fn click_button(&self, button: &MouseButton) -> Result<(), Error>;
     /// Scroll the mouse wheel towards to the given direction
     ///
     /// # Examples
     ///
     /// ```rust,no_run
     /// use mouce::Mouse;
+    /// use mouce::MouseActions;
     /// use mouce::common::ScrollDirection;
     /// use std::{thread, time};
     ///
@@ -136,6 +137,7 @@ pub trait MouseActions {
     ///
     /// ```rust,no_run
     /// use mouce::Mouse;
+    /// use mouce::MouseActions;
     /// use mouce::error::Error;
     ///
     /// let mut manager = Mouse::new();
@@ -158,6 +160,7 @@ pub trait MouseActions {
     ///
     /// ```rust,no_run
     /// use mouce::Mouse;
+    /// use mouce::MouseActions;
     ///
     /// let mut manager = Mouse::new();
     /// assert_eq!(manager.unhook_all(), Ok(()));
@@ -168,6 +171,7 @@ pub trait MouseActions {
 #[cfg(test)]
 mod tests {
     use crate::error::Error;
+    use crate::MouseActions;
     use crate::{common::MouseButton, common::ScrollDirection, Mouse};
     use std::sync::Mutex;
     use std::{thread, time};

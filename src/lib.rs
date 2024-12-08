@@ -13,6 +13,28 @@ pub mod darwin;
 #[cfg(target_os = "windows")]
 pub mod windows;
 
+
+/// The `Mouse` struct that implements the `MouseActions`
+///
+/// # Example usage
+///
+/// ```rust,no_run
+/// use std::thread;
+/// use std::time::Duration;
+/// 
+/// use mouce::{Mouse, MouseActions};
+/// 
+/// fn main() {
+///     let mouse_manager = Mouse::new();
+/// 
+///     let mut x = 0;
+///     while x < 1920 {
+///         let _ = mouse_manager.move_to(x, 540);
+///         x += 1;
+///         thread::sleep(Duration::from_millis(2));
+///     }
+/// }
+/// ```
 #[derive(Clone)]
 pub struct Mouse {
     #[cfg(all(

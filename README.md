@@ -12,7 +12,13 @@ Mouce is a library written in Rust that aims to help simulating and listening mo
     - Tested on i3wm Arch Linux
     - Uses X11 and XTest libraries
   - **Others (partially supported)** ❌
-    - For other systems, the library defaults to using **uinput**
+    - For other systems, you can disable the x11 feature and the library will use **uinput**
+      - Use `--no-default-features` argument with cargo
+      - Or disable default features in `Cargo.toml`
+        ```toml
+        [dependencies]
+        mouce = { version = "x.y.z", default-features = false }
+        ```
     - While using **uinput** there are some limitations for the library
       - ```get_position``` function is not implemented as **uinput** does not provide such a feature
       - The rest of the actions work and tested on KDE Wayland and sway

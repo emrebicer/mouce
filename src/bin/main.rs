@@ -62,6 +62,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .subcommand(
             Command::new("listen")
                 .about("Listen mouse events and print them to the terminal")
+        )
+        .subcommand(
+            Command::new("get_position_on_click")
+                .about("Listen for left mouse button press and print the position when pressed")
         );
 
     let mut mouse_manager = mouce::Mouse::new();
@@ -100,6 +104,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(("listen", _)) => {
             mouse_manager.hook(Box::new(|event| {
                 println!("{:?}", event);
+            }))?;
+            loop {
+                // Call sleep to avoid heavy cpu load
+                sleep(Duration::from_secs(u64::max_value()));
+            }
+        }
+        Some(("get_position_on_click", _)) => {
+            let manager_clone = mouse_manager.clone();
+            mouse_manager.hook(Box::new(move |e| {
+                match e {
+                    mouce::common::MouseEvent::Press(mouce::common::MouseButton::Left) => {
+                        match manager_clone.get_position() {
+                            Ok((x, y)) => println!("{x} {y}"),
+                            Err(err) => println!("Failed to get current position: {err}"),
+                        }
+                    }
+                    _ => {}
+                };
             }))?;
             loop {
                 // Call sleep to avoid heavy cpu load

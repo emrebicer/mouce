@@ -441,7 +441,7 @@ extern "C" {
     fn CFRelease(cf: CFTypeRef);
     fn CFMachPortCreateRunLoopSource(
         allocator: *mut c_void,
-        tap: *const c_void,
+        port: *const c_void,
         order: c_ulong,
     ) -> *mut c_void;
     fn CFRunLoopGetCurrent() -> *mut c_void;

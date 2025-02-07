@@ -73,8 +73,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match matches.subcommand() {
         Some(("move_to", sub_matches)) => {
-            let x: usize = sub_matches.value_of_t_or_exit("x_position");
-            let y: usize = sub_matches.value_of_t_or_exit("y_position");
+            let x: f64 = sub_matches.value_of_t_or_exit("x_position");
+            let y: f64 = sub_matches.value_of_t_or_exit("y_position");
             mouse_manager.move_to(x, y)?;
         }
         Some(("get_position", _)) => {

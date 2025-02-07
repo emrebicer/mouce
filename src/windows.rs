@@ -149,9 +149,9 @@ impl Drop for WindowsMouseManager {
 }
 
 impl MouseActions for WindowsMouseManager {
-    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
+    fn move_to(&self, x: f64, y: f64) -> Result<(), Error> {
         unsafe {
-            let result = SetCursorPos(x as c_int, y as c_int);
+            let result = SetCursorPos(x.floor() as c_int, y.floor() as c_int);
             if result == 0 {
                 return Err(Error::CustomError(
                     "failed to set the cursor position".to_string(),
@@ -161,16 +161,16 @@ impl MouseActions for WindowsMouseManager {
         Ok(())
     }
 
-    fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
+    fn move_relative(&self, x_offset: f64, y_offset: f64) -> Result<(), Error> {
         let (x, y) = self.get_position()?;
-        self.move_to((x + x_offset) as usize, (y + y_offset) as usize)
+        self.move_to(x + x_offset, y + y_offset)
     }
 
-    fn get_position(&self) -> Result<(i32, i32), Error> {
+    fn get_position(&self) -> Result<(f64, f64), Error> {
         match self.get_position_raw() {
             Ok((x, y)) => Ok((
-                x.try_into().expect("Can't fit i64 into i32"),
-                y.try_into().expect("Can't fit i64 into i32"),
+                x.try_into().expect("Cannot fit i32 into f64"),
+                y.try_into().expect("Cannot fit i32 into f64"),
             )),
             Err(e) => Err(e),
         }

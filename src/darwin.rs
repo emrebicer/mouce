@@ -101,7 +101,7 @@ impl DarwinMouseManager {
                     CGEventType::OtherMouseUp => Some(MouseEvent::Release(MouseButton::Middle)),
                     CGEventType::MouseMoved => {
                         let point = CGEventGetLocation(cg_event);
-                        Some(MouseEvent::AbsoluteMove(point.x as i32, point.y as i32))
+                        Some(MouseEvent::AbsoluteMove(point.x, point.y))
                     }
                     CGEventType::ScrollWheel => {
                         // CGEventField::scrollWheelEventPointDeltaAxis1 = 96
@@ -189,11 +189,8 @@ impl Drop for DarwinMouseManager {
 }
 
 impl MouseActions for DarwinMouseManager {
-    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
-        let cg_point = CGPoint {
-            x: x as f64,
-            y: y as f64,
-        };
+    fn move_to(&self, x: f64, y: f64) -> Result<(), Error> {
+        let cg_point = CGPoint { x, y };
         unsafe {
             let result = CGWarpMouseCursorPosition(cg_point);
             if result != CGError::Success {
@@ -206,12 +203,12 @@ impl MouseActions for DarwinMouseManager {
         Ok(())
     }
 
-    fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
+    fn move_relative(&self, x_offset: f64, y_offset: f64) -> Result<(), Error> {
         let (x, y) = self.get_position()?;
-        self.move_to((x + x_offset) as usize, (y + y_offset) as usize)
+        self.move_to(x + x_offset, y + y_offset)
     }
 
-    fn get_position(&self) -> Result<(i32, i32), Error> {
+    fn get_position(&self) -> Result<(f64, f64), Error> {
         unsafe {
             let event = CGEventCreate(null_mut());
             if event == null_mut() {
@@ -219,7 +216,7 @@ impl MouseActions for DarwinMouseManager {
             }
             let cursor = CGEventGetLocation(event);
             CFRelease(event as CFTypeRef);
-            return Ok((cursor.x as i32, cursor.y as i32));
+            return Ok((cursor.x, cursor.y));
         }
     }
 

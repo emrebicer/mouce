@@ -13,7 +13,6 @@ pub mod darwin;
 #[cfg(target_os = "windows")]
 pub mod windows;
 
-
 /// The `Mouse` struct that implements the `MouseActions`
 ///
 /// # Example usage
@@ -21,16 +20,16 @@ pub mod windows;
 /// ```rust,no_run
 /// use std::thread;
 /// use std::time::Duration;
-/// 
+///
 /// use mouce::{Mouse, MouseActions};
-/// 
+///
 /// fn main() {
 ///     let mouse_manager = Mouse::new();
-/// 
-///     let mut x = 0;
-///     while x < 1920 {
-///         let _ = mouse_manager.move_to(x, 540);
-///         x += 1;
+///
+///     let mut x = 0_f64;
+///     while x < 1920_f64 {
+///         let _ = mouse_manager.move_to(x, 540_f64);
+///         x += 1_f64;
 ///         thread::sleep(Duration::from_millis(2));
 ///     }
 /// }
@@ -105,15 +104,15 @@ impl Default for Mouse {
 }
 
 impl MouseActions for Mouse {
-    fn move_to(&self, x: usize, y: usize) -> Result<(), error::Error> {
+    fn move_to(&self, x: f64, y: f64) -> Result<(), error::Error> {
         self.inner.move_to(x, y)
     }
 
-    fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), error::Error> {
+    fn move_relative(&self, x_offset: f64, y_offset: f64) -> Result<(), error::Error> {
         self.inner.move_relative(x_offset, y_offset)
     }
 
-    fn get_position(&self) -> Result<(i32, i32), error::Error> {
+    fn get_position(&self) -> Result<(f64, f64), error::Error> {
         self.inner.get_position()
     }
 

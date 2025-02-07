@@ -19,8 +19,8 @@ pub enum ScrollDirection {
 
 #[derive(Debug, Copy, Clone)]
 pub enum MouseEvent {
-    RelativeMove(i32, i32),
-    AbsoluteMove(i32, i32),
+    RelativeMove(f64, f64),
+    AbsoluteMove(f64, f64),
     Press(MouseButton),
     Release(MouseButton),
     Scroll(ScrollDirection),
@@ -36,9 +36,9 @@ pub trait MouseActions {
     /// use mouce::MouseActions;
     ///
     /// let manager = Mouse::new();
-    /// assert_eq!(manager.move_to(0, 0), Ok(()));
+    /// assert_eq!(manager.move_to(0_f64, 0_f64), Ok(()));
     /// ```
-    fn move_to(&self, x: usize, y: usize) -> Result<(), Error>;
+    fn move_to(&self, x: f64, y: f64) -> Result<(), Error>;
     /// Move the mouse relative to the current position
     ///
     /// # Examples
@@ -48,9 +48,9 @@ pub trait MouseActions {
     /// use mouce::MouseActions;
     ///
     /// let manager = Mouse::new();
-    /// assert_eq!(manager.move_relative(100, 100), Ok(()));
+    /// assert_eq!(manager.move_relative(100_f64, 100_f64), Ok(()));
     /// ```
-    fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error>;
+    fn move_relative(&self, x_offset: f64, y_offset: f64) -> Result<(), Error>;
     /// Get the current position of the mouse
     ///
     /// # Examples
@@ -62,12 +62,12 @@ pub trait MouseActions {
     /// use mouce::error::Error;
     ///
     /// let manager = Mouse::new();
-    /// manager.move_to(0, 0);
+    /// manager.move_to(0_f64, 0_f64);
     /// // This function may not be implemented on some platforms such as Linux Wayland
-    /// let valid_outs = vec![Ok((0, 0)), Err(Error::NotImplemented)];
+    /// let valid_outs = vec![Ok((0_f64, 0_f64)), Err(Error::NotImplemented)];
     /// assert!(valid_outs.contains(&manager.get_position()));
     /// ```
-    fn get_position(&self) -> Result<(i32, i32), Error>;
+    fn get_position(&self) -> Result<(f64, f64), Error>;
     /// Press down the given mouse button
     ///
     /// # Examples
@@ -192,7 +192,7 @@ mod tests {
     fn move_to_right_bottom() {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
-            assert_eq!(manager.move_to(1920, 1080), Ok(()));
+            assert_eq!(manager.move_to(1920_f64, 1080_f64), Ok(()));
         });
     }
 
@@ -201,7 +201,7 @@ mod tests {
     fn move_to_top_left() {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
-            assert_eq!(manager.move_to(0, 0), Ok(()));
+            assert_eq!(manager.move_to(0_f64, 0_f64), Ok(()));
         });
     }
 
@@ -211,10 +211,10 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             let sleep_duration = time::Duration::from_millis(1);
-            let mut x = 0;
-            while x < 1920 {
-                assert_eq!(manager.move_to(x, 540), Ok(()));
-                x += 1;
+            let mut x = 0_f64;
+            while x < 1920_f64 {
+                assert_eq!(manager.move_to(x, 540_f64), Ok(()));
+                x += 1_f64;
                 thread::sleep(sleep_duration);
             }
         });
@@ -226,11 +226,11 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             let sleep_duration = time::Duration::from_millis(1);
-            let mut x = 0;
-            assert_eq!(manager.move_to(0, 540), Ok(()));
-            while x < 1920 {
-                assert_eq!(manager.move_relative(1, 0), Ok(()));
-                x += 1;
+            let mut x = 0_f64;
+            assert_eq!(manager.move_to(0_f64, 540_f64), Ok(()));
+            while x < 1920_f64 {
+                assert_eq!(manager.move_relative(1_f64, 0_f64), Ok(()));
+                x += 1_f64;
                 thread::sleep(sleep_duration);
             }
         });
@@ -242,10 +242,10 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             let sleep_duration = time::Duration::from_millis(1);
-            let mut y = 0;
-            while y < 1080 {
-                assert_eq!(manager.move_to(960, y), Ok(()));
-                y += 1;
+            let mut y = 0_f64;
+            while y < 1080_f64 {
+                assert_eq!(manager.move_to(960_f64, y), Ok(()));
+                y += 1_f64;
                 thread::sleep(sleep_duration);
             }
         });
@@ -257,11 +257,11 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             let sleep_duration = time::Duration::from_millis(1);
-            let mut y = 0;
-            assert_eq!(manager.move_to(960, 0), Ok(()));
-            while y < 1080 {
-                assert_eq!(manager.move_relative(0, 1), Ok(()));
-                y += 1;
+            let mut y = 0_f64;
+            assert_eq!(manager.move_to(960_f64, 0_f64), Ok(()));
+            while y < 1080_f64 {
+                assert_eq!(manager.move_relative(0_f64, 1_f64), Ok(()));
+                y += 1_f64;
                 thread::sleep(sleep_duration);
             }
         });
@@ -275,12 +275,12 @@ mod tests {
             match manager.get_position() {
                 Ok(_) => {
                     let positions = vec![
-                        (0, 0),
-                        (100, 100),
-                        (250, 250),
-                        (325, 325),
-                        (400, 100),
-                        (100, 400),
+                        (0_f64, 0_f64),
+                        (100_f64, 100_f64),
+                        (250_f64, 250_f64),
+                        (325_f64, 325_f64),
+                        (400_f64, 100_f64),
+                        (100_f64, 400_f64),
                     ];
 
                     let mut x;
@@ -288,8 +288,8 @@ mod tests {
                     for position in positions.iter() {
                         assert_eq!(manager.move_to(position.0, position.1), Ok(()));
                         (x, y) = manager.get_position().unwrap();
-                        assert_eq!(x, position.0 as i32);
-                        assert_eq!(y, position.1 as i32);
+                        assert_eq!(x, position.0);
+                        assert_eq!(y, position.1);
                     }
                 }
                 Err(error) => assert_eq!(error, Error::NotImplemented),

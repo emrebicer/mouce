@@ -56,9 +56,9 @@ impl Default for X11MouseManager {
 }
 
 impl MouseActions for X11MouseManager {
-    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
+    fn move_to(&self, x: i32, y: i32) -> Result<(), Error> {
         unsafe {
-            XWarpPointer(self.display, 0, self.window, 0, 0, 0, 0, x as i32, y as i32);
+            XWarpPointer(self.display, 0, self.window, 0, 0, 0, 0, x, y);
             XFlush(self.display);
         }
         Ok(())
@@ -66,7 +66,7 @@ impl MouseActions for X11MouseManager {
 
     fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
         let (x, y) = self.get_position()?;
-        self.move_to((x + x_offset) as usize, (y + y_offset) as usize)
+        self.move_to(x + x_offset, y + y_offset)
     }
 
     fn get_position(&self) -> Result<(i32, i32), Error> {

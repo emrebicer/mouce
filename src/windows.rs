@@ -149,7 +149,7 @@ impl Drop for WindowsMouseManager {
 }
 
 impl MouseActions for WindowsMouseManager {
-    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
+    fn move_to(&self, x: i32, y: i32) -> Result<(), Error> {
         unsafe {
             let result = SetCursorPos(x as c_int, y as c_int);
             if result == 0 {

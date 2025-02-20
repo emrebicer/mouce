@@ -171,14 +171,14 @@ impl Drop for UInputMouseManager {
 }
 
 impl MouseActions for UInputMouseManager {
-    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
+    fn move_to(&self, x: i32, y: i32) -> Result<(), Error> {
         // For some reason, absolute mouse move events are not working on uinput
         // (as I understand those events are intended for touch events)
         //
         // As a work around solution; first set the mouse to top left, then
         // call relative move function to simulate an absolute move event
         self.move_relative(i32::MIN, i32::MIN)?;
-        self.move_relative(x as i32, y as i32)
+        self.move_relative(x, y)
     }
 
     fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {

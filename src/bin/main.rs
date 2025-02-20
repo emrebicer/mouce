@@ -1,116 +1,109 @@
+use clap::{Parser, Subcommand};
+use mouce::MouseActions;
 use std::thread::sleep;
 use std::time::Duration;
 
 #[cfg(feature = "cli")]
-use clap::{Arg, Command};
-use mouce::MouseActions;
+#[derive(Parser)]
+#[command(
+    name = "mouce",
+    about = "A CLI tool that simulates mouse actions using the mouce library",
+    author = "Emre Bicer",
+    version = env!("CARGO_PKG_VERSION")
+)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[cfg(feature = "cli")]
+#[derive(Subcommand)]
+enum Commands {
+    /// Moves the mouse to the given position
+    MoveTo {
+        #[arg(long, short)]
+        x_position: i32,
+        #[arg(long, short)]
+        y_position: i32,
+    },
+    /// Move the mouse relative to the current position
+    MoveRelative {
+        #[arg(long, short)]
+        x_offset: i32,
+        #[arg(long, short)]
+        y_offset: i32,
+    },
+    /// Get the current position of the mouse, outputs `x` and `y` coordinates separated with a space
+    GetPosition,
+    /// Press the given mouse button
+    PressButton {
+        #[arg(long, short)]
+        button: String,
+    },
+    /// Release the given mouse button
+    ReleaseButton {
+        #[arg(long, short)]
+        button: String,
+    },
+    /// Click the given mouse button
+    ClickButton {
+        #[arg(long, short)]
+        button: String,
+    },
+    /// Scroll the mouse wheel towards the given direction
+    ScrollWheel {
+        #[arg(long, short)]
+        direction: String,
+    },
+    /// Listen mouse events and print them to the terminal
+    Listen,
+    /// Listen for left mouse button press and print the position when pressed
+    GetPositionOnClick,
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let app = Command::new("mouce")
-        .about("A CLI tool that simulates mouse actions using the mouce library")
-        .author("Emre Bicer")
-        .arg_required_else_help(true)
-        .version(env!("CARGO_PKG_VERSION"))
-        .subcommand(
-            Command::new("move_to")
-                .about("Moves the mouse to the given position")
-                .arg(Arg::new("x_position")
-                    .long("x_position")
-                    .short('x')
-                .takes_value(true))
-                .arg(Arg::new("y_position")
-                    .long("y_position")
-                    .short('y')
-                .takes_value(true))
-        )
-        .subcommand(
-            Command::new("get_position")
-                .about("Get the current position of the mouse, outputs `x` and `y` coordinates seperated with a space")
-        )
-        .subcommand(
-            Command::new("press_button")
-                .about("Press the given mouse button")
-                .arg(Arg::new("button")
-                    .long("button")
-                    .short('b')
-                .takes_value(true))
-        )
-        .subcommand(
-            Command::new("release_button")
-                .about("Release the given mouse button")
-                .arg(Arg::new("button")
-                    .long("button")
-                    .short('b')
-                .takes_value(true))
-        )
-        .subcommand(
-            Command::new("click_button")
-                .about("Click the given mouse button")
-                .arg(Arg::new("button")
-                    .long("button")
-                    .short('b')
-                .takes_value(true))
-        )
-        .subcommand(
-            Command::new("scroll_wheel")
-                .about("Scroll the mouse wheel towards to given direction")
-                .arg(Arg::new("direction")
-                    .long("direction")
-                    .short('d')
-                .takes_value(true))
-        )
-        .subcommand(
-            Command::new("listen")
-                .about("Listen mouse events and print them to the terminal")
-        )
-        .subcommand(
-            Command::new("get_position_on_click")
-                .about("Listen for left mouse button press and print the position when pressed")
-        );
-
+    let cli = Cli::parse();
     let mut mouse_manager = mouce::Mouse::new();
-    let matches = app.get_matches();
 
-    match matches.subcommand() {
-        Some(("move_to", sub_matches)) => {
-            let x: usize = sub_matches.value_of_t_or_exit("x_position");
-            let y: usize = sub_matches.value_of_t_or_exit("y_position");
-            mouse_manager.move_to(x, y)?;
+    match cli.command {
+        Commands::MoveTo {
+            x_position,
+            y_position,
+        } => {
+            mouse_manager.move_to(x_position, y_position)?;
         }
-        Some(("get_position", _)) => {
+        Commands::MoveRelative { x_offset, y_offset } => {
+            mouse_manager.move_relative(x_offset, y_offset)?;
+        }
+        Commands::GetPosition => {
             let (x, y) = mouse_manager.get_position()?;
             println!("{x} {y}");
         }
-        Some(("press_button", sub_matches)) => {
-            let button_arg: String = sub_matches.value_of_t_or_exit("button");
-            let button = get_mouse_button(&button_arg)?;
+        Commands::PressButton { button } => {
+            let button = get_mouse_button(&button)?;
             mouse_manager.press_button(&button)?;
         }
-        Some(("release_button", sub_matches)) => {
-            let button_arg: String = sub_matches.value_of_t_or_exit("button");
-            let button = get_mouse_button(&button_arg)?;
+        Commands::ReleaseButton { button } => {
+            let button = get_mouse_button(&button)?;
             mouse_manager.release_button(&button)?;
         }
-        Some(("click_button", sub_matches)) => {
-            let button_arg: String = sub_matches.value_of_t_or_exit("button");
-            let button = get_mouse_button(&button_arg)?;
+        Commands::ClickButton { button } => {
+            let button = get_mouse_button(&button)?;
             mouse_manager.click_button(&button)?;
         }
-        Some(("scroll_wheel", sub_matches)) => {
-            let direction_arg: String = sub_matches.value_of_t_or_exit("direction");
-            let direction = get_scroll_direction(&direction_arg)?;
+        Commands::ScrollWheel { direction } => {
+            let direction = get_scroll_direction(&direction)?;
             mouse_manager.scroll_wheel(&direction)?;
         }
-        Some(("listen", _)) => {
+        Commands::Listen => {
             mouse_manager.hook(Box::new(|event| {
                 println!("{:?}", event);
             }))?;
             loop {
-                // Call sleep to avoid heavy cpu load
                 sleep(Duration::from_secs(u64::max_value()));
             }
         }
-        Some(("get_position_on_click", _)) => {
+        Commands::GetPositionOnClick => {
             let manager_clone = mouse_manager.clone();
             mouse_manager.hook(Box::new(move |e| {
                 match e {
@@ -124,12 +117,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 };
             }))?;
             loop {
-                // Call sleep to avoid heavy cpu load
                 sleep(Duration::from_secs(u64::max_value()));
             }
-        }
-        _ => {
-            panic!("unknown subcommand, please see mouce --help");
         }
     }
 

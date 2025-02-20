@@ -189,7 +189,7 @@ impl Drop for DarwinMouseManager {
 }
 
 impl MouseActions for DarwinMouseManager {
-    fn move_to(&self, x: usize, y: usize) -> Result<(), Error> {
+    fn move_to(&self, x: i32, y: i32) -> Result<(), Error> {
         let cg_point = CGPoint {
             x: x as f64,
             y: y as f64,
@@ -208,7 +208,7 @@ impl MouseActions for DarwinMouseManager {
 
     fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
         let (x, y) = self.get_position()?;
-        self.move_to((x + x_offset) as usize, (y + y_offset) as usize)
+        self.move_to(x + x_offset, y + y_offset)
     }
 
     fn get_position(&self) -> Result<(i32, i32), Error> {

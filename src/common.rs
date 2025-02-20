@@ -38,7 +38,7 @@ pub trait MouseActions {
     /// let manager = Mouse::new();
     /// assert_eq!(manager.move_to(0, 0), Ok(()));
     /// ```
-    fn move_to(&self, x: usize, y: usize) -> Result<(), Error>;
+    fn move_to(&self, x: i32, y: i32) -> Result<(), Error>;
     /// Move the mouse relative to the current position
     ///
     /// # Examples

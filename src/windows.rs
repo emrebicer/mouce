@@ -163,7 +163,7 @@ impl MouseActions for WindowsMouseManager {
 
     fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error> {
         let (x, y) = self.get_position()?;
-        self.move_to((x + x_offset) as usize, (y + y_offset) as usize)
+        self.move_to(x + x_offset, y + y_offset)
     }
 
     fn get_position(&self) -> Result<(i32, i32), Error> {

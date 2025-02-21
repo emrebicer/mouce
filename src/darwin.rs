@@ -195,8 +195,13 @@ impl MouseActions for DarwinMouseManager {
             y: y as f64,
         };
         unsafe {
-            let result = CGWarpMouseCursorPosition(cg_point);
-            if result != CGError::Success {
+            if CGWarpMouseCursorPosition(cg_point) != CGError::Success {
+                return Err(Error::CustomError(
+                    "Failed to move the mouse, CGError is not Success".to_string(),
+                ));
+            }
+
+            if CGAssociateMouseAndMouseCursorPosition(true) != CGError::Success {
                 return Err(Error::CustomError(
                     "Failed to move the mouse, CGError is not Success".to_string(),
                 ));
@@ -219,6 +224,7 @@ impl MouseActions for DarwinMouseManager {
             }
             let cursor = CGEventGetLocation(event);
             CFRelease(event as CFTypeRef);
+            println("get_position called, x: {}, y: {}", cursor.x, cursor.y);
             return Ok((cursor.x as i32, cursor.y as i32));
         }
     }
@@ -436,6 +442,7 @@ extern "C" {
     ) -> CFTypeRef;
     fn CGEventTapEnable(tap: *const c_void, enable: bool);
     fn CGEventGetIntegerValueField(event: CGEventRef, field: c_uint) -> c_long;
+    fn CGAssociateMouseAndMouseCursorPosition(connected: bool) -> CGError;
 }
 #[link(name = "CoreFoundation", kind = "framework")]
 extern "C" {

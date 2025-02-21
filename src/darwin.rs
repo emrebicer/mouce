@@ -224,7 +224,7 @@ impl MouseActions for DarwinMouseManager {
             }
             let cursor = CGEventGetLocation(event);
             CFRelease(event as CFTypeRef);
-            println("get_position called, x: {}, y: {}", cursor.x, cursor.y);
+            println!("get_position called, x: {}, y: {}", cursor.x, cursor.y);
             return Ok((cursor.x as i32, cursor.y as i32));
         }
     }

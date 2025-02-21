@@ -138,18 +138,8 @@ impl UInputMouseManager {
 
     /// Move the mouse relative to the current position
     fn move_relative(&self, x: i32, y: i32) -> Result<(), Error> {
-        // uinput does not move the mouse in pixels but uses `units`. I couldn't
-        // find information regarding to this uinput `unit`, but according to
-        // my findings 1 unit corresponds to exactly 2 pixels.
-        //
-        // To achieve the expected behavior; divide the parameters by 2
-        //
-        // This seems like there is a bug in this crate, but the
-        // behavior is the same on other projects that make use of
-        // uinput. e.g. `ydotool`. When you try to move your mouse,
-        // it will move 2x further pixels
-        self.emit(EV_REL, REL_X as i32, (x as f32 / 2.).ceil() as i32)?;
-        self.emit(EV_REL, REL_Y as i32, (y as f32 / 2.).ceil() as i32)?;
+        self.emit(EV_REL, REL_X as i32, x)?;
+        self.emit(EV_REL, REL_Y as i32, y)?;
         self.syncronize()
     }
 }

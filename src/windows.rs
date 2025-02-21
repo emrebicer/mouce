@@ -211,6 +211,10 @@ impl MouseActions for WindowsMouseManager {
         self.send_input(event, scroll_amount)
     }
 
+    /// On windows, the mouse movement events are reported in AbsoluteMove event
+    /// using the physical coordinates rather than the logical pixel coordinates
+    /// So the returned coordinates will correspond to the native resolution rather than
+    /// the logical pixel space
     fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
         if !self.is_listening {
             self.start_listener()?;

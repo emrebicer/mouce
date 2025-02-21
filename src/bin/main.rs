@@ -19,21 +19,21 @@ struct Cli {
 #[cfg(feature = "cli")]
 #[derive(Subcommand)]
 enum Commands {
-    /// Moves the mouse to the given position
+    /// Moves the mouse to the given position in logical pixel space
     MoveTo {
         #[arg(long, short)]
         x_position: i32,
         #[arg(long, short)]
         y_position: i32,
     },
-    /// Move the mouse relative to the current position
+    /// Move the mouse relative to the current position in logical pixel space
     MoveRelative {
         #[arg(long, short)]
         x_offset: i32,
         #[arg(long, short)]
         y_offset: i32,
     },
-    /// Get the current position of the mouse, outputs `x` and `y` coordinates separated with a space
+    /// Get the current position of the mouse in logical pixel space, outputs `x` and `y` coordinates separated with a space
     GetPosition,
     /// Press the given mouse button
     PressButton {

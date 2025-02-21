@@ -27,7 +27,7 @@ pub enum MouseEvent {
 }
 
 pub trait MouseActions {
-    /// Move the mouse to the given `x`, `y` coordinates
+    /// Move the mouse to the given `x`, `y` coordinates in logical pixel space
     ///
     /// # Examples
     ///
@@ -39,7 +39,7 @@ pub trait MouseActions {
     /// assert_eq!(manager.move_to(0, 0), Ok(()));
     /// ```
     fn move_to(&self, x: i32, y: i32) -> Result<(), Error>;
-    /// Move the mouse relative to the current position
+    /// Move the mouse relative to the current position in logical pixel space
     ///
     /// # Examples
     ///
@@ -51,7 +51,7 @@ pub trait MouseActions {
     /// assert_eq!(manager.move_relative(100, 100), Ok(()));
     /// ```
     fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error>;
-    /// Get the current position of the mouse
+    /// Get the current position of the mouse in logical pixel space
     ///
     /// # Examples
     ///

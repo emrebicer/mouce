@@ -24,11 +24,11 @@ Mouce is a library written in Rust that aims to help simulating and listening mo
       - The rest of the actions work and tested on KDE Wayland and sway
 ## Library interface
 ```rust
-/// Move the mouse to the given `x`, `y` coordinates
+/// Move the mouse to the given `x`, `y` coordinates in logical pixel space
 fn move_to(&self, x: usize, y: usize) -> Result<(), Error>;
-/// Move the mouse relative to the current position
+/// Move the mouse relative to the current position in logical pixel space
 fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error>;
-/// Get the current position of the mouse
+/// Get the current position of the mouse in logical pixel space
 fn get_position(&self) -> Result<(i32, i32), Error>;
 /// Press down the given mouse button
 fn press_button(&self, button: &MouseButton) -> Result<(), Error>;

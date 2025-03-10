@@ -60,14 +60,14 @@ impl DarwinMouseManager {
             let event = match direction {
                 ScrollDirection::Up | ScrollDirection::Down => CGEventCreateScrollWheelEvent(
                     null_mut(),
-                    CGScrollEventUnit::Line,
+                    CGScrollEventUnit::Pixel,
                     2,
                     distance,
                     0,
                 ),
                 ScrollDirection::Right | ScrollDirection::Left => CGEventCreateScrollWheelEvent(
                     null_mut(),
-                    CGScrollEventUnit::Line,
+                    CGScrollEventUnit::Pixel,
                     2,
                     0,
                     distance,
@@ -391,8 +391,8 @@ enum CGEventTapLocation {
 
 #[repr(C)]
 enum CGScrollEventUnit {
-    _Pixel = 0,
-    Line = 1,
+    Pixel = 0,
+    _Line = 1,
 }
 
 #[repr(C)]

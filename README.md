@@ -36,8 +36,8 @@ fn press_button(&self, button: &MouseButton) -> Result<(), Error>;
 fn release_button(&self, button: &MouseButton) -> Result<(), Error>;
 /// Click the given mouse button
 fn click_button(&self, button: &MouseButton) -> Result<(), Error>;
-/// Scroll the mouse wheel towards to the given direction
-fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error>;
+/// Scroll the mouse wheel towards to the given direction with the given distance
+fn scroll_wheel(&self, direction: &ScrollDirection, distance: u32) -> Result<(), Error>;
 /// Attach a callback function to mouse events
 fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error>;
 /// Remove the callback function with the given `CallbackId`

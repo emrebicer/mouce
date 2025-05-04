@@ -109,13 +109,13 @@ impl DarwinMouseManager {
                         let delta_y = CGEventGetIntegerValueField(cg_event, 96);
                         let delta_x = CGEventGetIntegerValueField(cg_event, 97);
                         if delta_y > 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Up), delta_y as u32)
+                            Some(MouseEvent::Scroll(ScrollDirection::Up, delta_y as u32))
                         } else if delta_y < 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Down), delta_y.unsigned_abs())
+                            Some(MouseEvent::Scroll(ScrollDirection::Down, delta_y.unsigned_abs()))
                         } else if delta_x < 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Right), delta_x.unsigned_abs())
+                            Some(MouseEvent::Scroll(ScrollDirection::Right, delta_x.unsigned_abs()))
                         } else if delta_x > 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Left), delta_x as u32)
+                            Some(MouseEvent::Scroll(ScrollDirection::Left, delta_x as u32))
                         } else {
                             // Probably axis3 wheel scrolled
                             None

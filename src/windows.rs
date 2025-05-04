@@ -88,6 +88,7 @@ impl WindowsMouseManager {
                     }
                     WM_MOUSEHWHEEL => {
                         let delta = get_delta(lpdata) / WHEEL_DELTA as u16;
+                        let amount = 1;
                         match delta {
                             1 => Some(MouseEvent::Scroll(ScrollDirection::Right, amount)),
                             _ => Some(MouseEvent::Scroll(ScrollDirection::Left, amount)),

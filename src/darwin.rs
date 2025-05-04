@@ -111,9 +111,9 @@ impl DarwinMouseManager {
                         if delta_y > 0 {
                             Some(MouseEvent::Scroll(ScrollDirection::Up, delta_y as u32))
                         } else if delta_y < 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Down, delta_y.unsigned_abs()))
+                            Some(MouseEvent::Scroll(ScrollDirection::Down, delta_y.unsigned_abs() as u32))
                         } else if delta_x < 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Right, delta_x.unsigned_abs()))
+                            Some(MouseEvent::Scroll(ScrollDirection::Right, delta_x.unsigned_abs() as u32))
                         } else if delta_x > 0 {
                             Some(MouseEvent::Scroll(ScrollDirection::Left, delta_x as u32))
                         } else {

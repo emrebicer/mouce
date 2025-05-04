@@ -120,17 +120,23 @@ fn start_nix_listener(callbacks: &Callbacks) -> Result<(), Error> {
             } else if r#type == EV_REL {
                 let code = received.code as u32;
                 if code == REL_WHEEL {
-                    MouseEvent::Scroll(if received.value > 0 {
-                        ScrollDirection::Up
-                    } else {
-                        ScrollDirection::Down
-                    })
+                    MouseEvent::Scroll(
+                        if received.value > 0 {
+                            ScrollDirection::Up
+                        } else {
+                            ScrollDirection::Down
+                        },
+                        received.value.unsigned_abs(),
+                    )
                 } else if code == REL_HWHEEL {
-                    MouseEvent::Scroll(if received.value > 0 {
-                        ScrollDirection::Right
-                    } else {
-                        ScrollDirection::Left
-                    })
+                    MouseEvent::Scroll(
+                        if received.value > 0 {
+                            ScrollDirection::Right
+                        } else {
+                            ScrollDirection::Left
+                        },
+                        received.value.unsigned_abs(),
+                    )
                 } else if code == REL_X {
                     MouseEvent::RelativeMove(val, 0)
                 } else if code == REL_Y {

@@ -111,14 +111,14 @@ impl MouseActions for X11MouseManager {
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection, amount: u32) -> Result<(), Error> {
+    fn scroll_wheel(&self, direction: &ScrollDirection, distance: u32) -> Result<(), Error> {
         let btn = match direction {
             ScrollDirection::Up => 4,
             ScrollDirection::Down => 5,
             ScrollDirection::Left => 6,
             ScrollDirection::Right => 7,
         };
-        for _ in 0..amount {
+        for _ in 0..distance {
             unsafe {
                 XTestFakeButtonEvent(self.display, btn, true, 0);
                 XTestFakeButtonEvent(self.display, btn, false, 0);

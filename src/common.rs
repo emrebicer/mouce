@@ -23,7 +23,7 @@ pub enum MouseEvent {
     AbsoluteMove(i32, i32),
     Press(MouseButton),
     Release(MouseButton),
-    Scroll(ScrollDirection),
+    Scroll(ScrollDirection, u32),
 }
 
 pub trait MouseActions {
@@ -130,7 +130,7 @@ pub trait MouseActions {
     ///     thread::sleep(sleep_duration);
     /// }
     /// ```
-    fn scroll_wheel(&self, direction: &ScrollDirection, amount: u32) -> Result<(), Error>;
+    fn scroll_wheel(&self, direction: &ScrollDirection, distance: u32) -> Result<(), Error>;
     /// Attach a callback function to mouse events
     ///
     /// # Examples

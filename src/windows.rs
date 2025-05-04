@@ -79,16 +79,18 @@ impl WindowsMouseManager {
                     WM_RBUTTONUP => Some(MouseEvent::Release(MouseButton::Right)),
                     WM_MOUSEWHEEL => {
                         let delta = get_delta(lpdata) / WHEEL_DELTA as u16;
+                        // TODO: Extract the actual scroll distance...
+                        let amount = 1;
                         match delta {
-                            1 => Some(MouseEvent::Scroll(ScrollDirection::Up)),
-                            _ => Some(MouseEvent::Scroll(ScrollDirection::Down)),
+                            1 => Some(MouseEvent::Scroll(ScrollDirection::Up, amount)),
+                            _ => Some(MouseEvent::Scroll(ScrollDirection::Down, amount)),
                         }
                     }
                     WM_MOUSEHWHEEL => {
                         let delta = get_delta(lpdata) / WHEEL_DELTA as u16;
                         match delta {
-                            1 => Some(MouseEvent::Scroll(ScrollDirection::Right)),
-                            _ => Some(MouseEvent::Scroll(ScrollDirection::Left)),
+                            1 => Some(MouseEvent::Scroll(ScrollDirection::Right, amount)),
+                            _ => Some(MouseEvent::Scroll(ScrollDirection::Left, amount)),
                         }
                     }
                     _ => None,
@@ -201,14 +203,14 @@ impl MouseActions for WindowsMouseManager {
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection, amount: u32) -> Result<(), Error> {
-        let (event, scroll_amount) = match direction {
-            ScrollDirection::Up => (WindowsMouseEvent::Wheel, amount as i32),
-            ScrollDirection::Down => (WindowsMouseEvent::Wheel, (-1) * amount as i32),
-            ScrollDirection::Right => (WindowsMouseEvent::HWheel, amount as i32),
-            ScrollDirection::Left => (WindowsMouseEvent::HWheel, (-1) * amount as i32),
+    fn scroll_wheel(&self, direction: &ScrollDirection, distance: u32) -> Result<(), Error> {
+        let (event, scroll_distance) = match direction {
+            ScrollDirection::Up => (WindowsMouseEvent::Wheel, distance as i32),
+            ScrollDirection::Down => (WindowsMouseEvent::Wheel, -(distance as i32)),
+            ScrollDirection::Right => (WindowsMouseEvent::HWheel, distance as i32),
+            ScrollDirection::Left => (WindowsMouseEvent::HWheel, -(distance as i32)),
         };
-        self.send_input(event, scroll_amount)
+        self.send_input(event, scroll_distance)
     }
 
     /// On windows, the mouse movement events are reported in AbsoluteMove event

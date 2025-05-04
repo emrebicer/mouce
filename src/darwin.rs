@@ -109,13 +109,13 @@ impl DarwinMouseManager {
                         let delta_y = CGEventGetIntegerValueField(cg_event, 96);
                         let delta_x = CGEventGetIntegerValueField(cg_event, 97);
                         if delta_y > 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Up))
+                            Some(MouseEvent::Scroll(ScrollDirection::Up), delta_y as u32)
                         } else if delta_y < 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Down))
+                            Some(MouseEvent::Scroll(ScrollDirection::Down), delta_y.unsigned_abs())
                         } else if delta_x < 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Right))
+                            Some(MouseEvent::Scroll(ScrollDirection::Right), delta_x.unsigned_abs())
                         } else if delta_x > 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Left))
+                            Some(MouseEvent::Scroll(ScrollDirection::Left), delta_x as u32)
                         } else {
                             // Probably axis3 wheel scrolled
                             None
@@ -247,10 +247,10 @@ impl MouseActions for DarwinMouseManager {
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection, amount: u32) -> Result<(), Error> {
+    fn scroll_wheel(&self, direction: &ScrollDirection, distance: u32) -> Result<(), Error> {
         let distance = match direction {
-            ScrollDirection::Up | ScrollDirection::Left => amount as c_int,
-            ScrollDirection::Down | ScrollDirection::Right => (-1) * amount as c_int,
+            ScrollDirection::Up | ScrollDirection::Left => distance as c_int,
+            ScrollDirection::Down | ScrollDirection::Right => -(distance as c_int),
         };
         self.create_scroll_wheel_event(distance, direction)
     }

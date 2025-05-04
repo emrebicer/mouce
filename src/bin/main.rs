@@ -54,6 +54,8 @@ enum Commands {
     ScrollWheel {
         #[arg(long, short)]
         direction: String,
+        #[arg(long, short)]
+        amount: u32,
     },
     /// Listen mouse events and print them to the terminal
     Listen,
@@ -91,9 +93,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let button = get_mouse_button(&button)?;
             mouse_manager.click_button(&button)?;
         }
-        Commands::ScrollWheel { direction } => {
+        Commands::ScrollWheel { direction, amount } => {
             let direction = get_scroll_direction(&direction)?;
-            mouse_manager.scroll_wheel(&direction)?;
+            mouse_manager.scroll_wheel(&direction, amount)?;
         }
         Commands::Listen => {
             mouse_manager.hook(Box::new(|event| {

@@ -121,16 +121,16 @@ pub trait MouseActions {
     /// let sleep_duration = time::Duration::from_millis(250);
     ///
     /// for _ in 0..5 {
-    ///     assert_eq!(manager.scroll_wheel(&ScrollDirection::Down), Ok(()));
+    ///     assert_eq!(manager.scroll_wheel(&ScrollDirection::Down, 1), Ok(()));
     ///     thread::sleep(sleep_duration);
     /// }
     ///
     /// for _ in 0..5 {
-    ///     assert_eq!(manager.scroll_wheel(&ScrollDirection::Up), Ok(()));
+    ///     assert_eq!(manager.scroll_wheel(&ScrollDirection::Up, 1), Ok(()));
     ///     thread::sleep(sleep_duration);
     /// }
     /// ```
-    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error>;
+    fn scroll_wheel(&self, direction: &ScrollDirection, amount: u32) -> Result<(), Error>;
     /// Attach a callback function to mouse events
     ///
     /// # Examples
@@ -312,7 +312,7 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             for _ in 0..10 {
-                assert_eq!(manager.scroll_wheel(&ScrollDirection::Down), Ok(()));
+                assert_eq!(manager.scroll_wheel(&ScrollDirection::Down, 1), Ok(()));
                 let sleep_duration = time::Duration::from_millis(250);
                 thread::sleep(sleep_duration);
             }
@@ -325,7 +325,7 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             for _ in 0..10 {
-                assert_eq!(manager.scroll_wheel(&ScrollDirection::Up), Ok(()));
+                assert_eq!(manager.scroll_wheel(&ScrollDirection::Up, 1), Ok(()));
                 let sleep_duration = time::Duration::from_millis(250);
                 thread::sleep(sleep_duration);
             }
@@ -338,7 +338,7 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             for _ in 0..10 {
-                assert_eq!(manager.scroll_wheel(&ScrollDirection::Right), Ok(()));
+                assert_eq!(manager.scroll_wheel(&ScrollDirection::Right, 1), Ok(()));
                 let sleep_duration = time::Duration::from_millis(250);
                 thread::sleep(sleep_duration);
             }
@@ -351,7 +351,7 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             for _ in 0..10 {
-                assert_eq!(manager.scroll_wheel(&ScrollDirection::Left), Ok(()));
+                assert_eq!(manager.scroll_wheel(&ScrollDirection::Left, 1), Ok(()));
                 let sleep_duration = time::Duration::from_millis(250);
                 thread::sleep(sleep_duration);
             }

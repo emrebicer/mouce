@@ -60,14 +60,14 @@ impl DarwinMouseManager {
             let event = match direction {
                 ScrollDirection::Up | ScrollDirection::Down => CGEventCreateScrollWheelEvent(
                     null_mut(),
-                    CGScrollEventUnit::Line,
+                    CGScrollEventUnit::Pixel,
                     2,
                     distance,
                     0,
                 ),
                 ScrollDirection::Right | ScrollDirection::Left => CGEventCreateScrollWheelEvent(
                     null_mut(),
-                    CGScrollEventUnit::Line,
+                    CGScrollEventUnit::Pixel,
                     2,
                     0,
                     distance,
@@ -247,10 +247,10 @@ impl MouseActions for DarwinMouseManager {
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
+    fn scroll_wheel(&self, direction: &ScrollDirection, amount: u32) -> Result<(), Error> {
         let distance = match direction {
-            ScrollDirection::Up | ScrollDirection::Left => 5,
-            ScrollDirection::Down | ScrollDirection::Right => -5,
+            ScrollDirection::Up | ScrollDirection::Left => amount as c_int,
+            ScrollDirection::Down | ScrollDirection::Right => (-1) * amount as c_int,
         };
         self.create_scroll_wheel_event(distance, direction)
     }
@@ -379,8 +379,8 @@ enum CGEventTapLocation {
 
 #[repr(C)]
 enum CGScrollEventUnit {
-    _Pixel = 0,
-    Line = 1,
+    Pixel = 0,
+    _Line = 1,
 }
 
 #[repr(C)]

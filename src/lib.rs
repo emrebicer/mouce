@@ -129,8 +129,8 @@ impl MouseActions for Mouse {
         self.inner.click_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &common::ScrollDirection) -> Result<(), error::Error> {
-        self.inner.scroll_wheel(direction)
+    fn scroll_wheel(&self, direction: &common::ScrollDirection, amount: u32) -> Result<(), error::Error> {
+        self.inner.scroll_wheel(direction, amount)
     }
 
     fn hook(

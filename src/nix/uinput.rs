@@ -205,12 +205,12 @@ impl MouseActions for UInputMouseManager {
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
+    fn scroll_wheel(&self, direction: &ScrollDirection, amount: u32) -> Result<(), Error> {
         let (scroll_dir, scroll_value) = match direction {
-            ScrollDirection::Up => (REL_WHEEL, 1),
-            ScrollDirection::Down => (REL_WHEEL, -1),
-            ScrollDirection::Left => (REL_HWHEEL, -1),
-            ScrollDirection::Right => (REL_HWHEEL, 1),
+            ScrollDirection::Up => (REL_WHEEL, amount as c_int),
+            ScrollDirection::Down => (REL_WHEEL, (-1) * amount as c_int),
+            ScrollDirection::Left => (REL_HWHEEL, (-1) * amount as c_int),
+            ScrollDirection::Right => (REL_HWHEEL, amount as c_int),
         };
         self.emit(EV_REL, scroll_dir as c_int, scroll_value)?;
         self.syncronize()

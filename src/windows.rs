@@ -201,12 +201,12 @@ impl MouseActions for WindowsMouseManager {
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection) -> Result<(), Error> {
+    fn scroll_wheel(&self, direction: &ScrollDirection, amount: u32) -> Result<(), Error> {
         let (event, scroll_amount) = match direction {
-            ScrollDirection::Up => (WindowsMouseEvent::Wheel, 150),
-            ScrollDirection::Down => (WindowsMouseEvent::Wheel, -150),
-            ScrollDirection::Right => (WindowsMouseEvent::HWheel, 150),
-            ScrollDirection::Left => (WindowsMouseEvent::HWheel, -150),
+            ScrollDirection::Up => (WindowsMouseEvent::Wheel, amount as i32),
+            ScrollDirection::Down => (WindowsMouseEvent::Wheel, (-1) * amount as i32),
+            ScrollDirection::Right => (WindowsMouseEvent::HWheel, amount as i32),
+            ScrollDirection::Left => (WindowsMouseEvent::HWheel, (-1) * amount as i32),
         };
         self.send_input(event, scroll_amount)
     }

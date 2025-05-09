@@ -79,8 +79,8 @@ impl WindowsMouseManager {
                     WM_RBUTTONUP => Some(MouseEvent::Release(MouseButton::Right)),
                     WM_MOUSEWHEEL => {
                         let delta = get_delta(lpdata) / WHEEL_DELTA as u16;
-                        // TODO: Extract the actual scroll distance...
-                        let amount = 1;
+                        let amount = get_scroll_amount(lpdata);
+
                         match delta {
                             1 => Some(MouseEvent::Scroll(ScrollDirection::Up, amount)),
                             _ => Some(MouseEvent::Scroll(ScrollDirection::Down, amount)),
@@ -88,7 +88,8 @@ impl WindowsMouseManager {
                     }
                     WM_MOUSEHWHEEL => {
                         let delta = get_delta(lpdata) / WHEEL_DELTA as u16;
-                        let amount = 1;
+                        let amount = get_scroll_amount(lpdata);
+
                         match delta {
                             1 => Some(MouseEvent::Scroll(ScrollDirection::Right, amount)),
                             _ => Some(MouseEvent::Scroll(ScrollDirection::Left, amount)),
@@ -290,6 +291,14 @@ unsafe fn get_point(lpdata: LParam) -> (c_long, c_long) {
 unsafe fn get_delta(lpdata: LParam) -> Word {
     let mouse = *(lpdata as *const MSLLHookStruct);
     ((mouse.mouse_data >> 16) & 0xffff) as Word
+}
+
+unsafe fn get_scroll_amount(lpdata: LParam) -> u32 {
+    let mouse = *(lpdata as *const MSLLHookStruct);
+    let signed_raw_amount = ((mouse.mouse_data as DWord >> 16) & 0xffff) as c_short;
+    // Calculate the normalized and unsigned scroll amount
+    let normalized = signed_raw_amount.unsigned_abs() / WHEEL_DELTA as u16;
+    normalized as u32
 }
 
 /// User32 type definitions

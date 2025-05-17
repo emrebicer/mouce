@@ -116,7 +116,7 @@ pub trait MouseActions {
     /// Scroll the mouse wheel towards to the given direction
     ///
     /// All platforms allow scrolling with the Line unit,
-    /// however only darwin supports pixel scrolling
+    /// however only darwin and windows support pixel scrolling
     ///
     /// # Examples
     ///

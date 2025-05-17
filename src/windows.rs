@@ -213,18 +213,24 @@ impl MouseActions for WindowsMouseManager {
         scroll_unit: ScrollUnit,
         distance: u32,
     ) -> Result<(), Error> {
-        match scroll_unit {
-            ScrollUnit::Pixel => Err(Error::NotImplemented),
-            ScrollUnit::Line => {
-                let (event, scroll_distance) = match direction {
-                    ScrollDirection::Up => (WindowsMouseEvent::Wheel, distance as i32),
-                    ScrollDirection::Down => (WindowsMouseEvent::Wheel, -(distance as i32)),
-                    ScrollDirection::Right => (WindowsMouseEvent::HWheel, distance as i32),
-                    ScrollDirection::Left => (WindowsMouseEvent::HWheel, -(distance as i32)),
-                };
-                self.send_input(event, scroll_distance)
-            }
-        }
+        let scroll_distance_in_pixels = match scroll_unit {
+            ScrollUnit::Pixel => distance,
+            ScrollUnit::Line => distance * WHEEL_DELTA as u32,
+        };
+
+        let (event, scroll_distance) = match direction {
+            ScrollDirection::Up => (WindowsMouseEvent::Wheel, scroll_distance_in_pixels as i32),
+            ScrollDirection::Down => (
+                WindowsMouseEvent::Wheel,
+                -(scroll_distance_in_pixels as i32),
+            ),
+            ScrollDirection::Right => (WindowsMouseEvent::HWheel, scroll_distance_in_pixels as i32),
+            ScrollDirection::Left => (
+                WindowsMouseEvent::HWheel,
+                -(scroll_distance_in_pixels as i32),
+            ),
+        };
+        self.send_input(event, scroll_distance)
     }
 
     /// On windows, the mouse movement events are reported in AbsoluteMove event

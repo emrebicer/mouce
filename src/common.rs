@@ -86,7 +86,7 @@ pub trait MouseActions {
     /// let manager = Mouse::new();
     /// assert_eq!(manager.press_button(&MouseButton::Left), Ok(()));
     /// ```
-    fn press_button(&self, button: &MouseButton) -> Result<(), Error>;
+    fn press_button(&self, button: MouseButton) -> Result<(), Error>;
     /// Release the given mouse button
     ///
     /// # Examples
@@ -99,7 +99,7 @@ pub trait MouseActions {
     /// let manager = Mouse::new();
     /// assert_eq!(manager.release_button(&MouseButton::Left), Ok(()));
     /// ```
-    fn release_button(&self, button: &MouseButton) -> Result<(), Error>;
+    fn release_button(&self, button: MouseButton) -> Result<(), Error>;
     /// Click the given mouse button
     ///
     /// # Examples
@@ -112,7 +112,7 @@ pub trait MouseActions {
     /// let manager = Mouse::new();
     /// assert_eq!(manager.click_button(&MouseButton::Left), Ok(()));
     /// ```
-    fn click_button(&self, button: &MouseButton) -> Result<(), Error>;
+    fn click_button(&self, button: MouseButton) -> Result<(), Error>;
     /// Scroll the mouse wheel towards to the given direction
     ///
     /// All platforms allow scrolling with the Line unit,
@@ -141,7 +141,7 @@ pub trait MouseActions {
     /// ```
     fn scroll_wheel(
         &self,
-        direction: &ScrollDirection,
+        direction: ScrollDirection,
         scroll_unit: ScrollUnit,
         distance: u32,
     ) -> Result<(), Error>;
@@ -317,7 +317,7 @@ mod tests {
     fn left_click() {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
-            assert_eq!(manager.click_button(&MouseButton::Left), Ok(()));
+            assert_eq!(manager.click_button(MouseButton::Left), Ok(()));
         });
     }
 
@@ -328,7 +328,7 @@ mod tests {
             let manager = Mouse::new();
             for _ in 0..10 {
                 assert_eq!(
-                    manager.scroll_wheel(&ScrollDirection::Down, ScrollUnit::Line, 1),
+                    manager.scroll_wheel(ScrollDirection::Down, ScrollUnit::Line, 1),
                     Ok(())
                 );
                 let sleep_duration = time::Duration::from_millis(250);
@@ -344,7 +344,7 @@ mod tests {
             let manager = Mouse::new();
             for _ in 0..10 {
                 assert_eq!(
-                    manager.scroll_wheel(&ScrollDirection::Up, ScrollUnit::Line, 1),
+                    manager.scroll_wheel(ScrollDirection::Up, ScrollUnit::Line, 1),
                     Ok(())
                 );
                 let sleep_duration = time::Duration::from_millis(250);
@@ -360,7 +360,7 @@ mod tests {
             let manager = Mouse::new();
             for _ in 0..10 {
                 assert_eq!(
-                    manager.scroll_wheel(&ScrollDirection::Right, ScrollUnit::Line, 1),
+                    manager.scroll_wheel(ScrollDirection::Right, ScrollUnit::Line, 1),
                     Ok(())
                 );
                 let sleep_duration = time::Duration::from_millis(250);
@@ -376,7 +376,7 @@ mod tests {
             let manager = Mouse::new();
             for _ in 0..10 {
                 assert_eq!(
-                    manager.scroll_wheel(&ScrollDirection::Left, ScrollUnit::Line, 1),
+                    manager.scroll_wheel(ScrollDirection::Left, ScrollUnit::Line, 1),
                     Ok(())
                 );
                 let sleep_duration = time::Duration::from_millis(250);

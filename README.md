@@ -31,13 +31,13 @@ fn move_relative(&self, x_offset: i32, y_offset: i32) -> Result<(), Error>;
 /// Get the current position of the mouse in logical pixel space
 fn get_position(&self) -> Result<(i32, i32), Error>;
 /// Press down the given mouse button
-fn press_button(&self, button: &MouseButton) -> Result<(), Error>;
+fn press_button(&self, button: MouseButton) -> Result<(), Error>;
 /// Release the given mouse button
-fn release_button(&self, button: &MouseButton) -> Result<(), Error>;
+fn release_button(&self, button: MouseButton) -> Result<(), Error>;
 /// Click the given mouse button
-fn click_button(&self, button: &MouseButton) -> Result<(), Error>;
+fn click_button(&self, button: MouseButton) -> Result<(), Error>;
 /// Scroll the mouse wheel towards to the given direction
-fn scroll_wheel(&self, direction: &ScrollDirection, scroll_unit: ScrollUnit, distance: u32) -> Result<(), Error>;
+fn scroll_wheel(&self, direction: ScrollDirection, scroll_unit: ScrollUnit, distance: u32) -> Result<(), Error>;
 /// Attach a callback function to mouse events
 fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error>;
 /// Remove the callback function with the given `CallbackId`

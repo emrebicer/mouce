@@ -57,7 +57,7 @@ impl DarwinMouseManager {
         &self,
         distance: c_int,
         scroll_unit: ScrollUnit,
-        direction: &ScrollDirection,
+        direction: ScrollDirection,
     ) -> Result<(), Error> {
         unsafe {
             let unit = match scroll_unit {
@@ -66,20 +66,12 @@ impl DarwinMouseManager {
             };
 
             let event = match direction {
-                ScrollDirection::Up | ScrollDirection::Down => CGEventCreateScrollWheelEvent(
-                    null_mut(),
-                    unit,
-                    2,
-                    distance,
-                    0,
-                ),
-                ScrollDirection::Right | ScrollDirection::Left => CGEventCreateScrollWheelEvent(
-                    null_mut(),
-                    unit,
-                    2,
-                    0,
-                    distance,
-                ),
+                ScrollDirection::Up | ScrollDirection::Down => {
+                    CGEventCreateScrollWheelEvent(null_mut(), unit, 2, distance, 0)
+                }
+                ScrollDirection::Right | ScrollDirection::Left => {
+                    CGEventCreateScrollWheelEvent(null_mut(), unit, 2, 0, distance)
+                }
             };
 
             if event == null_mut() {
@@ -237,7 +229,7 @@ impl MouseActions for DarwinMouseManager {
         }
     }
 
-    fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn press_button(&self, button: MouseButton) -> Result<(), Error> {
         let (event_type, mouse_button) = match button {
             MouseButton::Left => (CGEventType::LeftMouseDown, CGMouseButton::Left),
             MouseButton::Middle => (CGEventType::OtherMouseDown, CGMouseButton::Center),
@@ -247,7 +239,7 @@ impl MouseActions for DarwinMouseManager {
         Ok(())
     }
 
-    fn release_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn release_button(&self, button: MouseButton) -> Result<(), Error> {
         let (event_type, mouse_button) = match button {
             MouseButton::Left => (CGEventType::LeftMouseUp, CGMouseButton::Left),
             MouseButton::Middle => (CGEventType::OtherMouseUp, CGMouseButton::Center),
@@ -256,14 +248,14 @@ impl MouseActions for DarwinMouseManager {
         self.create_mouse_event(event_type, mouse_button)
     }
 
-    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn click_button(&self, button: MouseButton) -> Result<(), Error> {
         self.press_button(button)?;
         self.release_button(button)
     }
 
     fn scroll_wheel(
         &self,
-        direction: &ScrollDirection,
+        direction: ScrollDirection,
         scroll_unit: ScrollUnit,
         distance: u32,
     ) -> Result<(), Error> {

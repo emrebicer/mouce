@@ -182,7 +182,7 @@ impl MouseActions for UInputMouseManager {
         Err(Error::NotImplemented)
     }
 
-    fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn press_button(&self, button: MouseButton) -> Result<(), Error> {
         let btn = match button {
             MouseButton::Left => BTN_LEFT,
             MouseButton::Right => BTN_RIGHT,
@@ -192,7 +192,7 @@ impl MouseActions for UInputMouseManager {
         self.syncronize()
     }
 
-    fn release_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn release_button(&self, button: MouseButton) -> Result<(), Error> {
         let btn = match button {
             MouseButton::Left => BTN_LEFT,
             MouseButton::Right => BTN_RIGHT,
@@ -202,14 +202,14 @@ impl MouseActions for UInputMouseManager {
         self.syncronize()
     }
 
-    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn click_button(&self, button: MouseButton) -> Result<(), Error> {
         self.press_button(button)?;
         self.release_button(button)
     }
 
     fn scroll_wheel(
         &self,
-        direction: &ScrollDirection,
+        direction: ScrollDirection,
         scroll_unit: ScrollUnit,
         distance: u32,
     ) -> Result<(), Error> {

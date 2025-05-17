@@ -182,7 +182,7 @@ impl MouseActions for WindowsMouseManager {
         }
     }
 
-    fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn press_button(&self, button: MouseButton) -> Result<(), Error> {
         let event = match button {
             MouseButton::Left => WindowsMouseEvent::LeftDown,
             MouseButton::Middle => WindowsMouseEvent::MiddleDown,
@@ -192,7 +192,7 @@ impl MouseActions for WindowsMouseManager {
         self.send_input(event, 0)
     }
 
-    fn release_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn release_button(&self, button: MouseButton) -> Result<(), Error> {
         let event = match button {
             MouseButton::Left => WindowsMouseEvent::LeftUp,
             MouseButton::Middle => WindowsMouseEvent::MiddleUp,
@@ -202,14 +202,14 @@ impl MouseActions for WindowsMouseManager {
         self.send_input(event, 0)
     }
 
-    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn click_button(&self, button: MouseButton) -> Result<(), Error> {
         self.press_button(button)?;
         self.release_button(button)
     }
 
     fn scroll_wheel(
         &self,
-        direction: &ScrollDirection,
+        direction: ScrollDirection,
         scroll_unit: ScrollUnit,
         distance: u32,
     ) -> Result<(), Error> {

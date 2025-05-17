@@ -116,21 +116,21 @@ impl MouseActions for Mouse {
         self.inner.get_position()
     }
 
-    fn press_button(&self, button: &common::MouseButton) -> Result<(), error::Error> {
+    fn press_button(&self, button: common::MouseButton) -> Result<(), error::Error> {
         self.inner.press_button(button)
     }
 
-    fn release_button(&self, button: &common::MouseButton) -> Result<(), error::Error> {
+    fn release_button(&self, button: common::MouseButton) -> Result<(), error::Error> {
         self.inner.release_button(button)
     }
 
-    fn click_button(&self, button: &common::MouseButton) -> Result<(), error::Error> {
+    fn click_button(&self, button: common::MouseButton) -> Result<(), error::Error> {
         self.inner.click_button(button)
     }
 
     fn scroll_wheel(
         &self,
-        direction: &common::ScrollDirection,
+        direction: common::ScrollDirection,
         scroll_unit: common::ScrollUnit,
         distance: u32,
     ) -> Result<(), error::Error> {

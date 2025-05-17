@@ -100,22 +100,22 @@ impl MouseActions for X11MouseManager {
         Ok((x, y))
     }
 
-    fn press_button(&self, button: &MouseButton) -> Result<(), Error> {
-        self.button_event(button, true)
+    fn press_button(&self, button: MouseButton) -> Result<(), Error> {
+        self.button_event(&button, true)
     }
 
-    fn release_button(&self, button: &MouseButton) -> Result<(), Error> {
-        self.button_event(button, false)
+    fn release_button(&self, button: MouseButton) -> Result<(), Error> {
+        self.button_event(&button, false)
     }
 
-    fn click_button(&self, button: &MouseButton) -> Result<(), Error> {
+    fn click_button(&self, button: MouseButton) -> Result<(), Error> {
         self.press_button(button)?;
         self.release_button(button)
     }
 
     fn scroll_wheel(
         &self,
-        direction: &ScrollDirection,
+        direction: ScrollDirection,
         scroll_unit: ScrollUnit,
         distance: u32,
     ) -> Result<(), Error> {

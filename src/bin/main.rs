@@ -86,15 +86,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Commands::PressButton { button } => {
             let button = get_mouse_button(&button)?;
-            mouse_manager.press_button(&button)?;
+            mouse_manager.press_button(button)?;
         }
         Commands::ReleaseButton { button } => {
             let button = get_mouse_button(&button)?;
-            mouse_manager.release_button(&button)?;
+            mouse_manager.release_button(button)?;
         }
         Commands::ClickButton { button } => {
             let button = get_mouse_button(&button)?;
-            mouse_manager.click_button(&button)?;
+            mouse_manager.click_button(button)?;
         }
         Commands::ScrollWheel {
             direction,
@@ -112,7 +112,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     )));
                 }
             };
-            mouse_manager.scroll_wheel(&direction, scroll_unit, distance)?;
+            mouse_manager.scroll_wheel(direction, scroll_unit, distance)?;
         }
         Commands::Listen => {
             mouse_manager.hook(Box::new(|event| {

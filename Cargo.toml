@@ -1,6 +1,6 @@
 [package]
 name = "mouce"
-version = "0.2.51"
+version = "0.3.0"
 edition = "2021"
 authors = ["Emre Bicer <oebicer@gmail.com>"]
 license = "MIT"

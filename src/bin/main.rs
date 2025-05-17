@@ -108,8 +108,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 _ => {
                     return Err(Box::new(std::io::Error::new(
                         std::io::ErrorKind::InvalidInput,
-                        format!("Scroll unit has to be pixel or line"),
-                    )));
+                        "scroll unit must be pixel or line",
+                    )))
                 }
             };
             mouse_manager.scroll_wheel(direction, scroll_unit, distance)?;

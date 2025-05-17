@@ -3,7 +3,9 @@
 /// for the windows opearting system
 /// Uses the User32 system library
 ///
-use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
+use crate::common::{
+    CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection, ScrollUnit,
+};
 use crate::error::Error;
 use std::collections::HashMap;
 use std::mem::size_of;
@@ -205,14 +207,24 @@ impl MouseActions for WindowsMouseManager {
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection, distance: u32) -> Result<(), Error> {
-        let (event, scroll_distance) = match direction {
-            ScrollDirection::Up => (WindowsMouseEvent::Wheel, distance as i32),
-            ScrollDirection::Down => (WindowsMouseEvent::Wheel, -(distance as i32)),
-            ScrollDirection::Right => (WindowsMouseEvent::HWheel, distance as i32),
-            ScrollDirection::Left => (WindowsMouseEvent::HWheel, -(distance as i32)),
-        };
-        self.send_input(event, scroll_distance)
+    fn scroll_wheel(
+        &self,
+        direction: &ScrollDirection,
+        scroll_unit: ScrollUnit,
+        distance: u32,
+    ) -> Result<(), Error> {
+        match scroll_unit {
+            ScrollUnit::Pixel => Err(Error::NotImplemented),
+            ScrollUnit::Line => {
+                let (event, scroll_distance) = match direction {
+                    ScrollDirection::Up => (WindowsMouseEvent::Wheel, distance as i32),
+                    ScrollDirection::Down => (WindowsMouseEvent::Wheel, -(distance as i32)),
+                    ScrollDirection::Right => (WindowsMouseEvent::HWheel, distance as i32),
+                    ScrollDirection::Left => (WindowsMouseEvent::HWheel, -(distance as i32)),
+                };
+                self.send_input(event, scroll_distance)
+            }
+        }
     }
 
     /// On windows, the mouse movement events are reported in AbsoluteMove event

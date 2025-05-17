@@ -5,7 +5,9 @@
 /// - Unsupported mouse actions
 ///     - get_position is not available on uinput
 ///
-use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
+use crate::common::{
+    CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection, ScrollUnit,
+};
 use crate::error::Error;
 use crate::nix::Callbacks;
 use std::collections::HashMap;
@@ -205,15 +207,25 @@ impl MouseActions for UInputMouseManager {
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection, distance: u32) -> Result<(), Error> {
-        let (scroll_dir, scroll_value) = match direction {
-            ScrollDirection::Up => (REL_WHEEL, distance as c_int),
-            ScrollDirection::Down => (REL_WHEEL, -(distance as c_int)),
-            ScrollDirection::Left => (REL_HWHEEL, -(distance as c_int)),
-            ScrollDirection::Right => (REL_HWHEEL, distance as c_int),
-        };
-        self.emit(EV_REL, scroll_dir as c_int, scroll_value)?;
-        self.syncronize()
+    fn scroll_wheel(
+        &self,
+        direction: &ScrollDirection,
+        scroll_unit: ScrollUnit,
+        distance: u32,
+    ) -> Result<(), Error> {
+        match scroll_unit {
+            ScrollUnit::Pixel => Err(Error::NotImplemented),
+            ScrollUnit::Line => {
+                let (scroll_dir, scroll_value) = match direction {
+                    ScrollDirection::Up => (REL_WHEEL, distance as c_int),
+                    ScrollDirection::Down => (REL_WHEEL, -(distance as c_int)),
+                    ScrollDirection::Left => (REL_HWHEEL, -(distance as c_int)),
+                    ScrollDirection::Right => (REL_HWHEEL, distance as c_int),
+                };
+                self.emit(EV_REL, scroll_dir as c_int, scroll_value)?;
+                self.syncronize()
+            }
+        }
     }
 
     fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {

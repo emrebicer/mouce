@@ -13,7 +13,6 @@ pub mod darwin;
 #[cfg(target_os = "windows")]
 pub mod windows;
 
-
 /// The `Mouse` struct that implements the `MouseActions`
 ///
 /// # Example usage
@@ -21,12 +20,12 @@ pub mod windows;
 /// ```rust,no_run
 /// use std::thread;
 /// use std::time::Duration;
-/// 
+///
 /// use mouce::{Mouse, MouseActions};
-/// 
+///
 /// fn main() {
 ///     let mouse_manager = Mouse::new();
-/// 
+///
 ///     let mut x = 0;
 ///     while x < 1920 {
 ///         let _ = mouse_manager.move_to(x, 540);
@@ -129,8 +128,13 @@ impl MouseActions for Mouse {
         self.inner.click_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &common::ScrollDirection, distance: u32) -> Result<(), error::Error> {
-        self.inner.scroll_wheel(direction, distance)
+    fn scroll_wheel(
+        &self,
+        direction: &common::ScrollDirection,
+        scroll_unit: common::ScrollUnit,
+        distance: u32,
+    ) -> Result<(), error::Error> {
+        self.inner.scroll_wheel(direction, scroll_unit, distance)
     }
 
     fn hook(

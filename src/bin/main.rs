@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use mouce::common::ScrollUnit;
 use mouce::MouseActions;
 use std::thread::sleep;
 use std::time::Duration;
@@ -52,10 +53,12 @@ enum Commands {
     },
     /// Scroll the mouse wheel towards the given direction
     ScrollWheel {
-        #[arg(long, short)]
+        #[arg(long)]
         direction: String,
+        #[arg(long)]
+        distance: u32,
         #[arg(long, short)]
-        amount: u32,
+        unit: String,
     },
     /// Listen mouse events and print them to the terminal
     Listen,
@@ -93,9 +96,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let button = get_mouse_button(&button)?;
             mouse_manager.click_button(&button)?;
         }
-        Commands::ScrollWheel { direction, amount } => {
+        Commands::ScrollWheel {
+            direction,
+            distance,
+            unit,
+        } => {
             let direction = get_scroll_direction(&direction)?;
-            mouse_manager.scroll_wheel(&direction, amount)?;
+            let scroll_unit = match unit.as_str() {
+                "pixel" | "p" => ScrollUnit::Pixel,
+                "line" | "l" => ScrollUnit::Line,
+                _ => {
+                    return Err(Box::new(std::io::Error::new(
+                        std::io::ErrorKind::InvalidInput,
+                        format!("Scroll unit has to be pixel or line"),
+                    )));
+                }
+            };
+            mouse_manager.scroll_wheel(&direction, scroll_unit, distance)?;
         }
         Commands::Listen => {
             mouse_manager.hook(Box::new(|event| {

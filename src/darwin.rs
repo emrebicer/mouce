@@ -3,7 +3,9 @@
 /// for the darwin systems (MacOS)
 /// Uses the CoreGraphics (a.k.a Quartz) framework
 ///
-use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
+use crate::common::{
+    CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection, ScrollUnit,
+};
 use crate::error::Error;
 use std::collections::HashMap;
 use std::os::raw::{c_double, c_int, c_long, c_uint, c_ulong, c_void};
@@ -54,20 +56,26 @@ impl DarwinMouseManager {
     fn create_scroll_wheel_event(
         &self,
         distance: c_int,
+        scroll_unit: ScrollUnit,
         direction: &ScrollDirection,
     ) -> Result<(), Error> {
         unsafe {
+            let unit = match scroll_unit {
+                ScrollUnit::Pixel => CGScrollEventUnit::Pixel,
+                ScrollUnit::Line => CGScrollEventUnit::Line,
+            };
+
             let event = match direction {
                 ScrollDirection::Up | ScrollDirection::Down => CGEventCreateScrollWheelEvent(
                     null_mut(),
-                    CGScrollEventUnit::Pixel,
+                    unit,
                     2,
                     distance,
                     0,
                 ),
                 ScrollDirection::Right | ScrollDirection::Left => CGEventCreateScrollWheelEvent(
                     null_mut(),
-                    CGScrollEventUnit::Pixel,
+                    unit,
                     2,
                     0,
                     distance,
@@ -111,9 +119,15 @@ impl DarwinMouseManager {
                         if delta_y > 0 {
                             Some(MouseEvent::Scroll(ScrollDirection::Up, delta_y as u32))
                         } else if delta_y < 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Down, delta_y.unsigned_abs() as u32))
+                            Some(MouseEvent::Scroll(
+                                ScrollDirection::Down,
+                                delta_y.unsigned_abs() as u32,
+                            ))
                         } else if delta_x < 0 {
-                            Some(MouseEvent::Scroll(ScrollDirection::Right, delta_x.unsigned_abs() as u32))
+                            Some(MouseEvent::Scroll(
+                                ScrollDirection::Right,
+                                delta_x.unsigned_abs() as u32,
+                            ))
                         } else if delta_x > 0 {
                             Some(MouseEvent::Scroll(ScrollDirection::Left, delta_x as u32))
                         } else {
@@ -247,12 +261,17 @@ impl MouseActions for DarwinMouseManager {
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection, distance: u32) -> Result<(), Error> {
+    fn scroll_wheel(
+        &self,
+        direction: &ScrollDirection,
+        scroll_unit: ScrollUnit,
+        distance: u32,
+    ) -> Result<(), Error> {
         let distance = match direction {
             ScrollDirection::Up | ScrollDirection::Left => distance as c_int,
             ScrollDirection::Down | ScrollDirection::Right => -(distance as c_int),
         };
-        self.create_scroll_wheel_event(distance, direction)
+        self.create_scroll_wheel_event(distance, scroll_unit, direction)
     }
 
     fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {
@@ -380,7 +399,7 @@ enum CGEventTapLocation {
 #[repr(C)]
 enum CGScrollEventUnit {
     Pixel = 0,
-    _Line = 1,
+    Line = 1,
 }
 
 #[repr(C)]

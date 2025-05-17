@@ -2,7 +2,9 @@
 /// This module contains the mouse action functions
 /// for the unix-like systems that use X11
 ///
-use crate::common::{CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection};
+use crate::common::{
+    CallbackId, MouseActions, MouseButton, MouseEvent, ScrollDirection, ScrollUnit,
+};
 use crate::error::Error;
 use crate::nix::Callbacks;
 use std::collections::HashMap;
@@ -111,21 +113,31 @@ impl MouseActions for X11MouseManager {
         self.release_button(button)
     }
 
-    fn scroll_wheel(&self, direction: &ScrollDirection, distance: u32) -> Result<(), Error> {
-        let btn = match direction {
-            ScrollDirection::Up => 4,
-            ScrollDirection::Down => 5,
-            ScrollDirection::Left => 6,
-            ScrollDirection::Right => 7,
-        };
-        for _ in 0..distance {
-            unsafe {
-                XTestFakeButtonEvent(self.display, btn, true, 0);
-                XTestFakeButtonEvent(self.display, btn, false, 0);
-                XFlush(self.display);
+    fn scroll_wheel(
+        &self,
+        direction: &ScrollDirection,
+        scroll_unit: ScrollUnit,
+        distance: u32,
+    ) -> Result<(), Error> {
+        match scroll_unit {
+            ScrollUnit::Pixel => Err(Error::NotImplemented),
+            ScrollUnit::Line => {
+                let btn = match direction {
+                    ScrollDirection::Up => 4,
+                    ScrollDirection::Down => 5,
+                    ScrollDirection::Left => 6,
+                    ScrollDirection::Right => 7,
+                };
+                for _ in 0..distance {
+                    unsafe {
+                        XTestFakeButtonEvent(self.display, btn, true, 0);
+                        XTestFakeButtonEvent(self.display, btn, false, 0);
+                        XFlush(self.display);
+                    }
+                }
+                Ok(())
             }
         }
-        Ok(())
     }
 
     fn hook(&mut self, callback: Box<dyn Fn(&MouseEvent) + Send>) -> Result<CallbackId, Error> {

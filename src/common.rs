@@ -26,6 +26,12 @@ pub enum MouseEvent {
     Scroll(ScrollDirection, u32),
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum ScrollUnit {
+    Pixel,
+    Line,
+}
+
 pub trait MouseActions {
     /// Move the mouse to the given `x`, `y` coordinates in logical pixel space
     ///
@@ -109,6 +115,9 @@ pub trait MouseActions {
     fn click_button(&self, button: &MouseButton) -> Result<(), Error>;
     /// Scroll the mouse wheel towards to the given direction
     ///
+    /// All platforms allow scrolling with the Line unit,
+    /// however only darwin supports pixel scrolling
+    ///
     /// # Examples
     ///
     /// ```rust,no_run
@@ -130,7 +139,12 @@ pub trait MouseActions {
     ///     thread::sleep(sleep_duration);
     /// }
     /// ```
-    fn scroll_wheel(&self, direction: &ScrollDirection, distance: u32) -> Result<(), Error>;
+    fn scroll_wheel(
+        &self,
+        direction: &ScrollDirection,
+        scroll_unit: ScrollUnit,
+        distance: u32,
+    ) -> Result<(), Error>;
     /// Attach a callback function to mouse events
     ///
     /// # Examples
@@ -170,6 +184,7 @@ pub trait MouseActions {
 
 #[cfg(test)]
 mod tests {
+    use crate::common::ScrollUnit;
     use crate::error::Error;
     use crate::MouseActions;
     use crate::{common::MouseButton, common::ScrollDirection, Mouse};
@@ -312,7 +327,10 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             for _ in 0..10 {
-                assert_eq!(manager.scroll_wheel(&ScrollDirection::Down, 1), Ok(()));
+                assert_eq!(
+                    manager.scroll_wheel(&ScrollDirection::Down, ScrollUnit::Line, 1),
+                    Ok(())
+                );
                 let sleep_duration = time::Duration::from_millis(250);
                 thread::sleep(sleep_duration);
             }
@@ -325,7 +343,10 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             for _ in 0..10 {
-                assert_eq!(manager.scroll_wheel(&ScrollDirection::Up, 1), Ok(()));
+                assert_eq!(
+                    manager.scroll_wheel(&ScrollDirection::Up, ScrollUnit::Line, 1),
+                    Ok(())
+                );
                 let sleep_duration = time::Duration::from_millis(250);
                 thread::sleep(sleep_duration);
             }
@@ -338,7 +359,10 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             for _ in 0..10 {
-                assert_eq!(manager.scroll_wheel(&ScrollDirection::Right, 1), Ok(()));
+                assert_eq!(
+                    manager.scroll_wheel(&ScrollDirection::Right, ScrollUnit::Line, 1),
+                    Ok(())
+                );
                 let sleep_duration = time::Duration::from_millis(250);
                 thread::sleep(sleep_duration);
             }
@@ -351,7 +375,10 @@ mod tests {
         TEST_EXECUTER.lock().unwrap().run_test(|| {
             let manager = Mouse::new();
             for _ in 0..10 {
-                assert_eq!(manager.scroll_wheel(&ScrollDirection::Left, 1), Ok(()));
+                assert_eq!(
+                    manager.scroll_wheel(&ScrollDirection::Left, ScrollUnit::Line, 1),
+                    Ok(())
+                );
                 let sleep_duration = time::Duration::from_millis(250);
                 thread::sleep(sleep_duration);
             }
